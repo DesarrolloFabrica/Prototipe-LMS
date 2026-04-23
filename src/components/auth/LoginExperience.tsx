@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { AccessPanel } from "@/components/auth/AccessPanel";
 import { AuthTransitionOverlay } from "@/components/auth/AuthTransitionOverlay";
 import { BootSequence } from "@/components/auth/BootSequence";
-import { LoginVisualPane } from "@/components/auth/LoginVisualPane";
 import { useMediaMotionProfile } from "@/hooks/useMediaMotionProfile";
 import type { AuthProfile, AuthProgressStep, LoginExperiencePhase } from "@/lib/authExperience";
 import { AUTH_EXPERIENCE_TIMINGS } from "@/lib/authExperience";
@@ -14,7 +13,7 @@ export function LoginExperience() {
   const { reducedMotion, isMobileLayout } = useMediaMotionProfile();
   const [phase, setPhase] = useState<LoginExperiencePhase>("booting");
   const [substateIndex, setSubstateIndex] = useState(0);
-  const [energyLevel, setEnergyLevel] = useState(0);
+
   const [progressStep, setProgressStep] = useState<AuthProgressStep>("validating");
 
   const authProfile: AuthProfile = reducedMotion || isMobileLayout ? "reduced" : "full";
@@ -52,7 +51,17 @@ export function LoginExperience() {
   }, [authProfile, navigate, phase, reducedMotion]);
 
   return (
-    <div className="relative min-h-dvh overflow-hidden bg-linear-to-b from-slate-50 via-[#f8fbff] to-slate-100 px-4 py-4 sm:px-6 sm:py-6">
+    <div className="relative min-h-dvh overflow-hidden px-4 py-4 sm:px-6 sm:py-6">
+      {/* Premium Background Image */}
+      <div 
+        className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: 'url("/images/Fondo-Login.jpg")' }}
+        aria-hidden 
+      />
+      
+      {/* Light Overlay to enhance readability while keeping it bright */}
+      <div className="absolute inset-0 z-0 bg-white/10 backdrop-blur-[2px]" aria-hidden />
+      
       <AnimatePresence mode="wait">
         {phase === "booting" ? (
           <BootSequence key="boot-sequence" substateIndex={substateIndex} reducedMotion={reducedMotion} />
@@ -60,22 +69,32 @@ export function LoginExperience() {
           <motion.section
             key="access-panel"
             initial={{ opacity: 0, scale: 1.012, filter: "blur(4px)" }}
-            animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-            transition={{ duration: reducedMotion ? 0.1 : 0.5 }}
-            className="relative z-10 mx-auto grid min-h-[calc(100dvh-2rem)] w-full max-w-6xl grid-cols-1 gap-5 md:grid-cols-[1.05fr_0.95fr]"
+            animate={{ opacity: 1, scale: 1, filter: "none" }}
+            exit={{ opacity: 0, scale: 0.98, filter: "blur(10px)" }}
+            transition={{ duration: reducedMotion ? 0.2 : 0.8 }}
+            className="relative z-10 mx-auto flex min-h-[calc(100dvh-2rem)] w-full max-w-lg items-center justify-center"
           >
-            <LoginVisualPane energyLevel={energyLevel} reducedMotion={reducedMotion} />
-
-            <div className="relative flex items-center justify-center">
-              <AuthTransitionOverlay active={phase === "authenticating"} step={progressStep} reducedMotion={reducedMotion} />
-              <AccessPanel
-                disabled={phase !== "readyForLogin"}
-                isAuthenticating={phase === "authenticating"}
-                progressStep={progressStep}
-                reducedMotion={reducedMotion}
-                onInteract={() => setEnergyLevel((prev) => Math.min(prev + 1, 3))}
-                onSubmitAccess={() => setPhase("authenticating")}
-              />
+            <div className="relative w-full min-h-[500px] flex items-center justify-center">
+              <AnimatePresence mode="wait">
+                {phase === "authenticating" ? (
+                  <AuthTransitionOverlay
+                    key="auth-overlay"
+                    active={true}
+                    step={progressStep}
+                    reducedMotion={reducedMotion}
+                  />
+                ) : phase === "readyForLogin" ? (
+                  <AccessPanel
+                    key="access-panel-card"
+                    disabled={false}
+                    isAuthenticating={false}
+                    progressStep={progressStep}
+                    reducedMotion={reducedMotion}
+                    onInteract={() => {}}
+                    onSubmitAccess={() => setPhase("authenticating")}
+                  />
+                ) : null}
+              </AnimatePresence>
             </div>
           </motion.section>
         )}

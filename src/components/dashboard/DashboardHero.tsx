@@ -41,7 +41,6 @@ function assignRef<T>(instanceRef: Ref<T> | undefined, node: T | null) {
 }
 
 const HERO_VIDEO_SRC = "/videos/192779-893446888.mp4";
-const HERO_VIDEO_POSTER = "/images/hero-tech.jpg";
 
 const FLOW_LEGEND: { title: string; description: string; icon: LucideIcon; featured?: boolean }[] = [
   {
@@ -131,14 +130,14 @@ export const DashboardHero = forwardRef<HTMLElement, DashboardHeroProps>(functio
   const staggerParent = reducedStaggerContainer(reducedMotion);
 
   return (
-    <div className="w-full min-h-dvh shrink-0 bg-[#f8fafc]">
+    <div className="w-full min-h-dvh shrink-0 bg-[#020617]">
       <motion.section
         id={DASHBOARD_SECTION_IDS.hero}
         ref={setMergedRef}
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: motionDuration.xl, ease: motionEase.outExpo }}
-        className="relative flex h-dvh min-h-0 w-full shrink-0 flex-col overflow-hidden bg-white text-slate-900"
+        className="relative flex h-dvh min-h-0 w-full shrink-0 flex-col overflow-hidden bg-slate-950 text-white"
       >
         <div className="absolute inset-0 z-0 overflow-hidden">
           <motion.div
@@ -148,13 +147,12 @@ export const DashboardHero = forwardRef<HTMLElement, DashboardHeroProps>(functio
           >
             <video
               ref={videoRef}
-              className="absolute inset-0 h-full w-full object-cover object-center brightness-[0.86] contrast-[1.08] saturate-[1.04] opacity-72"
+              className="absolute inset-0 h-full w-full object-cover object-center brightness-[0.8] contrast-[1.2] saturate-[1.3] opacity-100"
               autoPlay
               muted
               loop
               playsInline
               preload="auto"
-              poster={HERO_VIDEO_POSTER}
               aria-hidden
             >
               <source src={HERO_VIDEO_SRC} type="video/mp4" />
@@ -163,15 +161,15 @@ export const DashboardHero = forwardRef<HTMLElement, DashboardHeroProps>(functio
         </div>
 
         <div
-          className="pointer-events-none absolute inset-0 z-1 opacity-[0.2]"
+          className="pointer-events-none absolute inset-0 z-1 opacity-[0.3]"
           style={{
-            background: `radial-gradient(ellipse 60% 50% at ${glowX}% ${glowY}%, rgba(59,130,246,0.4), transparent 70%)`,
+            background: `radial-gradient(ellipse 70% 60% at ${glowX}% ${glowY}%, rgba(59,130,246,0.3), transparent 80%)`,
           }}
           aria-hidden
         />
-        <div className="pointer-events-none absolute inset-0 z-1 bg-white/18 backdrop-blur-[0.5px]" aria-hidden />
+        <div className="pointer-events-none absolute inset-0 z-1 bg-slate-950/40 backdrop-blur-[0.5px]" aria-hidden />
         <div
-          className="pointer-events-none absolute inset-0 z-1 bg-linear-to-t from-[#f8fafc]/78 via-transparent to-white/12"
+          className="pointer-events-none absolute inset-0 z-1 bg-linear-to-t from-slate-950 via-transparent to-white/5"
           aria-hidden
         />
 
@@ -189,7 +187,7 @@ export const DashboardHero = forwardRef<HTMLElement, DashboardHeroProps>(functio
                 
                 <motion.h1
                   variants={itemVariant}
-                  className="mb-6 bg-linear-to-br from-slate-900 via-slate-800 to-blue-600 bg-clip-text text-4xl font-black leading-[1.05] tracking-tight text-transparent drop-shadow-sm sm:text-6xl md:text-[4rem]"
+                  className="mb-6 bg-linear-to-br from-white via-slate-200 to-blue-400 bg-clip-text text-4xl font-black leading-[1.05] tracking-tight text-transparent drop-shadow-lg sm:text-6xl md:text-[4rem]"
                 >
                   Control académico <br className="hidden sm:block" />
                   en un solo flujo
@@ -197,7 +195,7 @@ export const DashboardHero = forwardRef<HTMLElement, DashboardHeroProps>(functio
                 
                 <motion.p
                   variants={itemVariant}
-                  className="mb-6 max-w-lg text-base font-medium leading-relaxed text-slate-700 drop-shadow-sm sm:text-xl"
+                  className="mb-6 max-w-lg text-base font-medium leading-relaxed text-slate-300 drop-shadow-md sm:text-xl"
                 >
                   Orquesta entregas, revisiones y cierres con visibilidad total. Sistema de gestión unificada sin fricción.
                 </motion.p>
@@ -223,7 +221,7 @@ export const DashboardHero = forwardRef<HTMLElement, DashboardHeroProps>(functio
                   <motion.button
                     type="button"
                     onClick={goNav}
-                    className="group flex h-12 items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white px-8 text-[14px] font-bold text-slate-700 shadow-sm transition-all hover:bg-slate-50 hover:border-slate-300"
+                    className="group flex h-12 items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-8 text-[14px] font-bold text-white shadow-sm transition-all hover:bg-white/10 hover:border-white/20 backdrop-blur-md"
                     whileHover={{ scale: 1.05, y: -2 }}
                     whileTap={scaleTap}
                   >
@@ -254,11 +252,11 @@ export const DashboardHero = forwardRef<HTMLElement, DashboardHeroProps>(functio
           </div>
         </div>
 
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-14 h-48 bg-linear-to-t from-[#f8fafc] via-[#f8fafc]/80 to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-14 h-48 bg-linear-to-t from-slate-950 via-slate-950/80 to-transparent" />
 
         <div className="pointer-events-none absolute inset-x-0 bottom-8 z-20 flex justify-center px-4 md:px-8">
           <div className="pointer-events-auto w-full max-w-7xl">
-            <ul className="flex list-none flex-row gap-4 overflow-x-auto rounded-[2.5rem] border border-slate-200/60 bg-white/70 p-4 shadow-xl backdrop-blur-3xl [&::-webkit-scrollbar]:hidden">
+            <ul className="flex list-none flex-row gap-4 overflow-x-auto rounded-[2.5rem] border border-white/10 bg-slate-900/40 p-4 shadow-2xl backdrop-blur-3xl [&::-webkit-scrollbar]:hidden">
               {FLOW_LEGEND.map((item, idx) => {
                 const Icon = item.icon;
                 return (
@@ -270,8 +268,8 @@ export const DashboardHero = forwardRef<HTMLElement, DashboardHeroProps>(functio
                     className={cn(
                       "group relative flex min-w-64 flex-1 shrink-0 items-center gap-4 rounded-3xl border px-5 py-5 transition-all duration-500 sm:min-w-0",
                       item.featured
-                        ? "border-blue-500/40 bg-blue-500/10 shadow-[0_10px_30px_-10px_rgba(59,130,246,0.3)]"
-                        : "border-white/5 bg-white/2 hover:border-white/20 hover:bg-white/5"
+                        ? "border-blue-500/40 bg-blue-500/20 shadow-[0_10px_30px_-10px_rgba(59,130,246,0.3)]"
+                        : "border-white/5 bg-white/5 hover:border-white/10 hover:bg-white/10"
                     )}
                   >
                     {/* Detalles decorativos de módulo */}
@@ -290,11 +288,11 @@ export const DashboardHero = forwardRef<HTMLElement, DashboardHeroProps>(functio
                     <div className="flex min-w-0 flex-col gap-1">
                       <p className={cn(
                         "text-[14px] font-bold tracking-tight transition-colors duration-300",
-                        item.featured ? "text-slate-900" : "text-slate-700 group-hover:text-slate-900"
+                        item.featured ? "text-white" : "text-slate-300 group-hover:text-white"
                       )}>
                         {item.title}
                       </p>
-                      <p className="truncate text-[11px] font-medium text-slate-500 transition-colors group-hover:text-slate-400">
+                      <p className="truncate text-[11px] font-medium text-slate-400 transition-colors group-hover:text-slate-300">
                         {item.description}
                       </p>
                     </div>
