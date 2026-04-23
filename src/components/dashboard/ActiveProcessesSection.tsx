@@ -1,4 +1,4 @@
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useState, useEffect} from "react";
 import { motion, useInView, useReducedMotion } from "framer-motion";
 import { ArrowRight, User, Clock, Zap, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -180,31 +180,54 @@ export function ActiveProcessesSection() {
               items={panelItems}
               getItemId={(p) => p.id}
               gridClassName="gap-6 md:grid-cols-2 lg:grid-cols-3 lg:gap-8"
-              renderCard={({ item: p, index, selected, onSelect, detailPanelId }) => {
-                const prio = PRIORITY_STYLES[p.priority] ?? "bg-slate-100 text-slate-700";
-                const cover = cardCoverUrl(p);
-                const progress = pipelineProgress(p.status);
+                renderCard={({ item: p, index, selected, onSelect, detailPanelId }) => {
+                  const prio = PRIORITY_STYLES[p.priority] ?? "bg-slate-100 text-slate-700";
+                  const cover = cardCoverUrl(p);
+                  const progress = pipelineProgress(p.status);
+                  
+                  // 1. Estados para el hover y para la instancia de Lottie
+                  const [isHovered, setIsHovered] = useState(false);
+                  const [dotLottie, setDotLottie] = useState<any>(null);
 
-                return (
-                  <motion.div
-                    className="group relative"
-                    initial="hidden"
-                    whileInView="visible"
-                    whileHover="hover"
-                    viewport={{ once: true, amount: 0.1 }}
-                    variants={{
-                      hidden: { opacity: 0, y: 20 },
-                      visible: { 
-                        opacity: 1, 
-                        y: 0,
-                        transition: {
-                          duration: reducedMotion ? 0.01 : 0.6,
-                          delay: reducedMotion ? 0 : index * 0.05,
-                          ease: motionEase.out,
-                        }
-                      }
-                    }}
-                  >
+                  // 2. Referencia para capturar la instancia cuando el componente carga
+                  const lottieRefCallback = (dotLottieInstance: any) => {
+                    setDotLottie(dotLottieInstance);
+                  };
+
+                  // 3. Efecto para reaccionar al cambio de isHovered
+                  useEffect(() => {
+                    if (!dotLottie) return;
+
+                    if (isHovered) {
+                      dotLottie.play();
+                    } else {
+                      // Opcional: puedes usar .stop() si quieres que vuelva al frame 0
+                      dotLottie.stop(); 
+                    }
+                  }, [isHovered, dotLottie]);
+
+                    return (
+                        <motion.div
+                          className="group relative"
+                          initial="hidden"
+                          onHoverStart={() => setIsHovered(true)}
+                          onHoverEnd={() => setIsHovered(false)}
+                          whileInView="visible"
+                          whileHover="hover"
+                          viewport={{ once: true, amount: 0.1 }}
+                          variants={{
+                            hidden: { opacity: 0, y: 20 },
+                            visible: { 
+                              opacity: 1, 
+                              y: 0,
+                              transition: {
+                                duration: reducedMotion ? 0.01 : 0.6,
+                                delay: reducedMotion ? 0 : index * 0.05,
+                                ease: motionEase.out,
+                              }
+                            }
+                          }}
+                        >
                     {/* Borde animado en hover */}
                     <div className="absolute -inset-[1px] rounded-[2rem] bg-linear-to-r from-cyan-400 via-indigo-500 to-purple-600 opacity-0 blur-[2px] transition-opacity duration-500 group-hover:opacity-100" />
 
@@ -295,21 +318,21 @@ export function ActiveProcessesSection() {
                           </div>
 
                           {/* Inteligencia del Sistema: Ubicación dedicada y grande */}
-                          <div className="relative flex flex-col items-center justify-center border-l border-slate-100 pl-4">
-                            <div className="relative h-20 w-20">
-                              {/* Glow de fondo para que resalte */}
-                              <div className="absolute inset-0 bg-indigo-500/10 blur-[20px] rounded-full animate-pulse" />
-                              <DotLottieReact
-                                src="/videos/brain.lottie"
-                                loop
-                                autoplay
-                                className="h-full w-full"
-                              />
-                            </div>
-                            <span className="mt-1 text-[8px] font-black uppercase tracking-[0.15em] text-indigo-500/80 text-center">
-                              AI_AUDIT
-                            </span>
+                  <div className="relative flex flex-col items-center justify-center border-l border-slate-100 pl-4">
+                          <div className="relative h-20 w-20">
+                            <div className="absolute inset-0 bg-indigo-500/10 blur-[20px] rounded-full animate-pulse" />
+                            <DotLottieReact
+                              src="/videos/Processing.lottie"
+                              dotLottieRefCallback={lottieRefCallback} // Asignamos la instancia
+                              loop
+                              autoplay={false} // Desactivamos el inicio automático por defecto
+                              className="h-full w-full"
+                            />
                           </div>
+                          <span className="mt-1 text-[8px] font-black uppercase tracking-[0.15em] text-indigo-500/80 text-center">
+                            AI_AUDIT
+                          </span>
+                        </div>
                         </div>
 
                         <FuturisticProgress value={progress} />
