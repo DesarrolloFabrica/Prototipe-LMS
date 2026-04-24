@@ -127,6 +127,30 @@ export function AccessPanel({
           </Button>
         </div>
 
+        {/* Bloque de sugerencias de acceso para prototipo */}
+        <div className="mt-4 space-y-3 rounded-2xl bg-blue-50/50 p-4 border border-blue-100/50 backdrop-blur-sm">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-blue-600/70 text-center mb-1">
+            Credenciales de acceso rápido
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <p className="text-[9px] font-black uppercase text-slate-400">Usuario GIF</p>
+              <code className="text-[11px] font-mono font-bold text-slate-700 bg-white/80 px-2 py-1 rounded-md block text-center">
+                gif@carga.com
+              </code>
+            </div>
+            <div className="space-y-1 border-l border-blue-200/30 pl-3">
+              <p className="text-[9px] font-black uppercase text-indigo-500">Coordinador</p>
+              <code className="text-[11px] font-mono font-bold text-indigo-700 bg-white/80 px-2 py-1 rounded-md block text-center">
+                coordinador@carga.com
+              </code>
+            </div>
+          </div>
+          <p className="text-[9px] text-center text-slate-400 font-medium italic">
+            * Clave provisional: 123456
+          </p>
+        </div>
+
         <p className="text-center text-xs font-bold text-slate-400 uppercase tracking-wider">Acceso institucional protegido</p>
       </form>
     </motion.section>
