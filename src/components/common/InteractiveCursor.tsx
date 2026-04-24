@@ -59,7 +59,7 @@ export function InteractiveCursor() {
     <div className="pointer-events-none fixed inset-0 z-[9999] overflow-hidden">
       {/* 1. Destello de Fondo (Spotlight sutil) */}
       <motion.div
-        className="absolute h-[600px] w-[600px] rounded-full bg-blue-500/5 blur-[120px]"
+        className="absolute h-[200px] w-[200px] rounded-full bg-blue-500/5 blur-[120px]"
         style={{
           x: cursorX,
           y: cursorY,

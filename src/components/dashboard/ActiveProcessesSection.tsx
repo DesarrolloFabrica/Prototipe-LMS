@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState, useEffect} from "react";
 import { motion, useInView, useReducedMotion } from "framer-motion";
-import { ArrowRight, User, Clock, Zap } from "lucide-react";
+import { ArrowRight, User, Clock, Zap, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import { AnimatedSection } from "@/components/common/AnimatedSection";
 import { RevealOnScroll } from "@/components/common/RevealOnScroll";
@@ -9,10 +9,10 @@ import { SectionTitle } from "@/components/ui/SectionTitle";
 import { Badge } from "@/components/ui/Badge";
 import { StatusPill } from "@/components/shared/StatusPill";
 import { DASHBOARD_SECTION_IDS } from "@/lib/dashboardSectionIds";
-import { dashboardRouteShortcuts } from "@/data/mockProcesses";
+import { dashboardRouteShortcuts, processes } from "@/data/mockProcesses";
 import { PRIORITY_STYLES } from "@/lib/constants";
 import { techCoverImageForKey } from "@/lib/techCoverImages";
-import { motionEase } from "@/lib/animations";
+import { motionEase, motionDuration, scaleTap } from "@/lib/animations";
 import type { DashboardActiveCard, Status } from "@/types";
 import { cn } from "@/lib/cn";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
@@ -107,7 +107,7 @@ export function ActiveProcessesSection() {
             scale: [1, 1.2, 1]
           }}
           transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-          className="absolute top-[-10%] left-[10%] h-[600px] w-[600px] rounded-full bg-indigo-500/10 blur-[120px]" 
+          className="absolute -top-[10%] left-[10%] h-[600px] w-[600px] rounded-full bg-indigo-500/10 blur-[120px]" 
         />
         <motion.div 
           animate={{ 
@@ -116,7 +116,7 @@ export function ActiveProcessesSection() {
             scale: [1, 1.1, 1]
           }}
           transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-          className="absolute bottom-[-10%] right-[10%] h-[500px] w-[500px] rounded-full bg-cyan-500/10 blur-[100px]" 
+          className="absolute -bottom-[10%] right-[10%] h-[500px] w-[500px] rounded-full bg-cyan-500/10 blur-[100px]" 
         />
 
         {/* Cuadrícula técnica con pulsos de luz */}
@@ -154,7 +154,7 @@ export function ActiveProcessesSection() {
           />
         ))}
 
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0.01)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.01)_1px,transparent_1px)] bg-size-[4rem_4rem] mask-[radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0.01)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.01)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
       </div>
 
       <div className="relative mx-auto max-w-[min(1280px,calc(100%-2rem))] px-4 sm:px-6">
@@ -229,14 +229,14 @@ export function ActiveProcessesSection() {
                           }}
                         >
                     {/* Borde animado en hover */}
-                    <div className="absolute -inset-px rounded-4xl bg-linear-to-r from-cyan-400 via-indigo-500 to-purple-600 opacity-0 blur-[2px] transition-opacity duration-500 group-hover:opacity-100" />
+                    <div className="absolute -inset-[1px] rounded-[2rem] bg-linear-to-r from-neutral-50 via-blue-50 to-fuchsia-200 opacity-0 blur-[2px] transition-opacity duration-500 group-hover:opacity-100" />
 
                     <Link
                       to={p.href}
                       onClick={onSelect}
                       aria-controls={detailPanelId}
                       className={cn(
-                        "relative flex h-full flex-col overflow-hidden rounded-4xl border transition-all duration-500 ease-out",
+                        "relative flex h-full flex-col overflow-hidden rounded-[2rem] border transition-all duration-500 ease-out",
                         selected
                           ? "border-transparent bg-white shadow-2xl ring-2 ring-indigo-500/20"
                           : "border-white/60 bg-white/70 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-xl hover:bg-white/90 hover:shadow-[0_20px_40px_rgba(0,0,0,0.08)]",
@@ -248,7 +248,7 @@ export function ActiveProcessesSection() {
                         <div className="h-1 w-1 rounded-full bg-indigo-500/30" />
                       </div>
 
-                      <div className="relative aspect-video overflow-hidden">
+                      <div className="relative aspect-16/9 overflow-hidden">
                         <img
                           src={cover}
                           alt=""
@@ -256,11 +256,11 @@ export function ActiveProcessesSection() {
                         />
                         {/* Overlay futurista con patrón de escaneo */}
                         <div className="absolute inset-0 bg-linear-to-t from-slate-950/90 via-slate-950/20 to-transparent" />
-                        <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.1)_1px,transparent_1px)] bg-size-[10px_10px] opacity-20" />
+                        <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.1)_1px,transparent_1px)] bg-[size:10px_10px] opacity-20" />
 
                         {/* Efecto de línea de escaneo al pasar el mouse */}
                         <motion.div
-                          className="absolute inset-x-0 h-px bg-cyan-400/50 shadow-[0_0_10px_rgba(34,211,238,0.8)]"
+                          className="absolute inset-x-0 h-[1px] bg-cyan-400/50 shadow-[0_0_10px_rgba(34,211,238,0.8)]"
                           initial={{ top: "-10%" }}
                           whileHover={{ top: ["0%", "100%"] }}
                           transition={{ repeat: Infinity, duration: 2, ease: "linear" }}

@@ -40,7 +40,7 @@ function assignRef<T>(instanceRef: Ref<T> | undefined, node: T | null) {
   else (instanceRef as MutableRefObject<T | null>).current = node;
 }
 
-const HERO_VIDEO_SRC = "/videos/192779-893446888.mp4";
+const HERO_VIDEO_SRC = "/videos/background.mp4";
 
 const FLOW_LEGEND: { title: string; description: string; icon: LucideIcon; featured?: boolean }[] = [
   {
@@ -242,7 +242,7 @@ export const DashboardHero = forwardRef<HTMLElement, DashboardHeroProps>(functio
               >
                 <div className="absolute inset-0 bg-blue-500/10 blur-[100px] rounded-full" />
                 <DotLottieReact
-                  src="/videos/tech%20coding%20upload.lottie"
+                  src="/videos/brain.lottie"
                   loop
                   autoplay
                   className="h-full w-full object-contain drop-shadow-[0_0_50px_rgba(59,130,246,0.4)]"
