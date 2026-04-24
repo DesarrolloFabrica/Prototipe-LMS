@@ -1,10 +1,9 @@
 ﻿import { motion } from "framer-motion";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ActiveProcessesSection } from "@/components/dashboard/ActiveProcessesSection";
 import { DashboardEntryTransition } from "@/components/dashboard/DashboardEntryTransition";
 import { DashboardHero } from "@/components/dashboard/DashboardHero";
-import { FlowExplanationSection } from "@/components/dashboard/FlowExplanationSection";
+import { DriveSubmissionSection } from "@/components/submissions/DriveSubmissionSection";
 import type { AuthNavigationState, AuthProfile } from "@/lib/authExperience";
 import { AUTH_EXPERIENCE_INTENSITY } from "@/lib/authExperience";
 import {
@@ -42,8 +41,11 @@ export function DashboardPage() {
 
   const activeQueue = processes.filter((p) => p.status !== "Completed");
   const inReviewCount = processes.filter((p) => p.status === "In Review").length;
-  const statsLine = `${activeQueue.length} procesos activos · ${inReviewCount} en revisión · ${activityFeed.length} eventos hoy`;
-
+  const userRole = useUIStore((state) => state.userRole);
+  const statsLine =
+    userRole === "coordinador"
+      ? `Panel de coordinación · ${activeQueue.length} procesos activos · ${inReviewCount} en revisión`
+      : `${activeQueue.length} procesos activos · ${inReviewCount} en revisión · ${activityFeed.length} eventos hoy`;
   useEffect(() => {
     const tick = () => {
       const el = heroDarkRef.current;
@@ -100,13 +102,28 @@ export function DashboardPage() {
     return () => observer.disconnect();
   }, [setDashboardNavScrollActiveTo]);
 
+  function handleScrollToDriveForm() {
+    document.getElementById("drive-submission-form")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }
+
   return (
+
     <>
+
+      <div className="fixed top-4 left-1/2 z-50 -translate-x-1/2 transform rounded-full bg-gray-950/90 px-6 py-3 text-xs font-bold text-white backdrop-blur-xl shadow-xl ring-1 ring-white/10">
+        {userRole === "coordinador" ? "Panel de coordinación" : "Vista de GIF"}
+        <span className="ml-2 opacity-70">●</span>
+      </div>
+
       <DashboardEntryTransition
         active={showEntryTransition}
         profile={entryProfile}
         onComplete={() => setShowEntryTransition(false)}
       />
+
       <motion.div
         initial={
           entrySession.fromAuth
@@ -116,9 +133,13 @@ export function DashboardPage() {
         animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
         transition={{ duration: dashboardRevealDuration, ease: [0.22, 1, 0.36, 1] }}
       >
-      <DashboardHero ref={heroDarkRef} statsLine={statsLine} />
-      <FlowExplanationSection />
-      <ActiveProcessesSection />
+        <DashboardHero ref={heroDarkRef} statsLine={statsLine} onPrimaryAction={handleScrollToDriveForm} />
+        <section
+          id="drive-submission-form"
+          className="min-h-screen scroll-mt-0"
+        >
+          <DriveSubmissionSection />
+        </section>
       </motion.div>
     </>
   );

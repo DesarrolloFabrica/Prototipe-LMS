@@ -1,6 +1,9 @@
 ﻿import { create } from "zustand";
+import type { UserRole } from "@/types"
 
 interface UIState {
+  userRole: UserRole;
+  setUserRole: (role: UserRole) => void;
   currentUserId: string;
   globalSearch: string;
   activeFilter: string;
@@ -17,10 +20,11 @@ interface UIState {
 }
 
 export const useUIStore = create<UIState>((set) => ({
+  userRole: "gif",
   currentUserId: "u1",
   globalSearch: "",
   activeFilter: "all",
-  selectedProcessId: undefined,
+  selectedProcessId:  undefined,
   dashboardNavOverLight: false,
   dashboardNavScrollActiveTo: "inicio",
   setSearch: (globalSearch) => set({ globalSearch }),
@@ -28,5 +32,6 @@ export const useUIStore = create<UIState>((set) => ({
   setSelectedProcess: (selectedProcessId) => set({ selectedProcessId }),
   setDashboardNavOverLight: (dashboardNavOverLight) => set({ dashboardNavOverLight }),
   setDashboardNavScrollActiveTo: (dashboardNavScrollActiveTo) => set({ dashboardNavScrollActiveTo }),
+  setUserRole: (userRole) => set({ userRole }),
 }));
 

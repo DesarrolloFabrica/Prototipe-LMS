@@ -1,4 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useUIStore } from "@/store/uiStore";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -28,23 +29,37 @@ export function AccessPanel({
   onSubmitAccess,
   onInteract,
 }: AccessPanelProps) {
+  const setUserRole = useUIStore((state) => state.setUserRole);
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<FormData>({ resolver: zodResolver(schema) });
+
+  const handleAccessSubmit = (data: FormData) => {
+
+    const normalizedEmail = data.email.trim().toLowerCase();
+
+    if (normalizedEmail.includes("coordinador")) {
+      setUserRole("coordinador");
+    } else {
+      setUserRole("gif");
+    }
+    onSubmitAccess();
+  };
 
   return (
     <motion.section
       initial={{ opacity: 0, y: 12, filter: "blur(4px)" }}
       animate={{ opacity: 1, y: 0, filter: "none" }}
-      exit={{ 
-        scaleX: [1, 1.05, 1.05, 0], 
-        scaleY: [1, 1, 0.005, 0], 
+      exit={{
+        scaleX: [1, 1.05, 1.05, 0],
+        scaleY: [1, 1, 0.005, 0],
         opacity: [1, 1, 0.8, 0],
         filter: ["blur(0px)", "blur(0px)", "blur(2px)", "blur(12px)"]
       }}
-      transition={{ 
+      transition={{
         duration: reducedMotion ? 0.3 : 0.8,
         times: [0, 0.2, 0.7, 1],
         ease: [0.45, 0, 0.55, 1]
@@ -55,7 +70,7 @@ export function AccessPanel({
 
       <form
         className="relative z-10 space-y-6"
-        onSubmit={handleSubmit(() => onSubmitAccess())}
+        onSubmit={handleSubmit(handleAccessSubmit)}
         onFocus={onInteract}
         onChange={onInteract}
       >

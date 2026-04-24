@@ -17,10 +17,10 @@ export type TopNavigationVariant = "solid" | "glass";
 /** Estilos base para la barra de navegación futurista */
 const navShellBase = "relative flex items-center justify-between gap-4 transition-all duration-500 ease-out";
 
-const glassShell = 
+const glassShell =
   "rounded-[2rem] border border-white/20 bg-slate-950/40 px-4 py-2.5 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.5)] backdrop-blur-3xl backdrop-saturate-200 ring-1 ring-white/10";
 
-const solidShell = 
+const solidShell =
   "rounded-[2rem] border border-slate-200 bg-white px-5 py-2.5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] backdrop-blur-xl ring-1 ring-slate-900/5";
 
 const LAYOUT_ID = "dashboard-nav-indicator";
@@ -29,11 +29,32 @@ export function TopNavigation({ variant = "solid" }: { variant?: TopNavigationVa
   const isGlass = variant === "glass";
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  function handleNewSubmissionClick() {
+  /**
+   * Si ya estamos en dashboard, solo hacemos scroll al formulario.
+   */
+  if (pathname === "/dashboard") {
+    document.getElementById("drive-submission-form")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+
+    return;
+  }
+
+  /**
+   * Si estamos en otra ruta, volvemos al dashboard.
+   * El hash nos servirá para ubicar el formulario después.
+   */
+  navigate("/dashboard#drive-submission-form");
+}
+
   const isDashboard = pathname === "/dashboard";
   const dashboardNavOverLight = useUIStore((s) => s.dashboardNavOverLight);
   const dashboardNavScrollActiveTo = useUIStore((s) => s.dashboardNavScrollActiveTo);
   const setDashboardNavScrollActiveTo = useUIStore((s) => s.setDashboardNavScrollActiveTo);
   const darkNav = isGlass && dashboardNavOverLight;
+
 
   const scrollToInicio = useCallback(() => {
     setDashboardNavScrollActiveTo(DASHBOARD_SCROLL_TAB_IDS.inicio);
@@ -45,7 +66,7 @@ export function TopNavigation({ variant = "solid" }: { variant?: TopNavigationVa
   return (
     <header className={cn("z-50", isGlass ? "px-4 pt-6 sm:px-8 sm:pt-8" : "sticky top-4 px-4 sm:px-6")}>
       <div className={cn(navShellBase, isGlass ? "mx-auto max-w-5xl" : "mx-auto max-w-7xl", shellClass)}>
-        
+
         {/* Lado Izquierdo: Logo con estilo tecnológico */}
         <div className="flex items-center gap-3">
           <Link
@@ -55,7 +76,7 @@ export function TopNavigation({ variant = "solid" }: { variant?: TopNavigationVa
           >
             <div className="relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl bg-linear-to-br from-blue-600 to-indigo-700 shadow-lg shadow-blue-500/20 ring-1 ring-white/20 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 group-hover:shadow-blue-500/40">
               <span className="relative z-10 text-[11px] font-black tracking-tighter text-white">CL</span>
-              <motion.div 
+              <motion.div
                 className="absolute inset-0 bg-linear-to-r from-transparent via-white/20 to-transparent"
                 animate={{ x: ["-100%", "200%"] }}
                 transition={{ repeat: Infinity, duration: 3, ease: "linear" }}
@@ -79,10 +100,10 @@ export function TopNavigation({ variant = "solid" }: { variant?: TopNavigationVa
             isGlass ? "bg-white/5 ring-white/10" : "bg-slate-100/50 ring-slate-200/50"
           )}>
             {DASHBOARD_NAV_SCROLL_TABS.map((tab: any) => {
-              const isActive = tab.path 
-                ? pathname === tab.path 
+              const isActive = tab.path
+                ? pathname === tab.path
                 : (isDashboard ? dashboardNavScrollActiveTo === tab.id : false);
-              
+
               return (
                 <button
                   key={tab.id}
@@ -102,8 +123,8 @@ export function TopNavigation({ variant = "solid" }: { variant?: TopNavigationVa
                   }}
                   className={cn(
                     "relative flex items-center justify-center rounded-full px-5 py-2 text-[12.5px] font-bold tracking-tight transition-all duration-300",
-                    isActive 
-                      ? (isGlass ? "text-white" : "text-indigo-600") 
+                    isActive
+                      ? (isGlass ? "text-white" : "text-indigo-600")
                       : (isGlass ? "text-white/60 hover:text-white" : "text-slate-600 hover:text-slate-900")
                   )}
                 >
@@ -113,8 +134,8 @@ export function TopNavigation({ variant = "solid" }: { variant?: TopNavigationVa
                         layoutId={LAYOUT_ID}
                         className={cn(
                           "absolute inset-0 z-0 rounded-full",
-                          isGlass 
-                            ? "bg-white/15 shadow-[0_0_15px_rgba(255,255,255,0.15)] ring-1 ring-white/20" 
+                          isGlass
+                            ? "bg-white/15 shadow-[0_0_15px_rgba(255,255,255,0.15)] ring-1 ring-white/20"
                             : "bg-white shadow-sm ring-1 ring-slate-200"
                         )}
                         initial={{ opacity: 0, scale: 0.95 }}
@@ -134,19 +155,20 @@ export function TopNavigation({ variant = "solid" }: { variant?: TopNavigationVa
         {/* Lado Derecho: Acciones y Perfil */}
         <div className="flex items-center gap-3">
           <motion.div whileHover={{ scale: 1.05 }} whileTap={scaleTap}>
-            <Link
-              to="/submissions/new"
-                className={cn(
-                  "group relative flex items-center gap-2 overflow-hidden rounded-full px-5 py-2.5 text-[12.5px] font-bold tracking-tight text-white transition-all duration-300",
-                  "bg-linear-to-r from-blue-600 via-indigo-600 to-indigo-700 shadow-[0_10px_20px_-5px_rgba(59,130,246,0.5)] ring-1 ring-white/20"
-                )}
+            <button
+              type="button"
+              onClick={handleNewSubmissionClick}
+              className={cn(
+                "group relative flex items-center gap-2 overflow-hidden rounded-full px-5 py-2.5 text-[12.5px] font-bold tracking-tight text-white transition-all duration-300",
+                "bg-linear-to-r from-blue-600 via-indigo-600 to-indigo-700 shadow-[0_10px_20px_-5px_rgba(59,130,246,0.5)] ring-1 ring-white/20"
+              )}
             >
               <Plus className="h-3.5 w-3.5" strokeWidth={3} />
               <span className="max-sm:hidden">Nueva carga</span>
-              
+
               {/* Efecto de brillo de escaneo al pasar el mouse */}
               <div className="absolute inset-0 -translate-x-full bg-linear-to-r from-transparent via-white/20 to-transparent transition-transform duration-500 group-hover:translate-x-full" />
-            </Link>
+            </button>
           </motion.div>
 
           <div className={cn("hidden h-6 w-px sm:block", darkNav ? "bg-white/20" : "bg-slate-200")} />
@@ -172,8 +194,8 @@ export function TopNavigation({ variant = "solid" }: { variant?: TopNavigationVa
             whileTap={scaleTap}
             className={cn(
               "relative flex h-10 w-10 items-center justify-center rounded-xl font-bold transition-all duration-300",
-              isGlass 
-                ? "bg-white/10 text-white shadow-lg ring-1 ring-white/20 hover:bg-white/20" 
+              isGlass
+                ? "bg-white/10 text-white shadow-lg ring-1 ring-white/20 hover:bg-white/20"
                 : "bg-white text-slate-800 shadow-sm ring-1 ring-slate-200 hover:border-indigo-200 hover:shadow-md"
             )}
           >
@@ -186,7 +208,7 @@ export function TopNavigation({ variant = "solid" }: { variant?: TopNavigationVa
           </motion.button>
         </div>
       </div>
-      
+
       {/* Detalle decorativo inferior (línea de luz sutil en modo glass) */}
       {isGlass && (
         <div className="mx-auto mt-2 h-px max-w-xs bg-linear-to-r from-transparent via-blue-500/20 to-transparent" />

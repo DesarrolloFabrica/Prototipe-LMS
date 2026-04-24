@@ -32,6 +32,7 @@ import { cn } from "@/lib/cn";
 
 export type DashboardHeroProps = {
   statsLine: string;
+  onPrimaryAction?: () => void;
 };
 
 function assignRef<T>(instanceRef: Ref<T> | undefined, node: T | null) {
@@ -72,7 +73,7 @@ const FLOW_LEGEND: { title: string; description: string; icon: LucideIcon; featu
 ];
 
 export const DashboardHero = forwardRef<HTMLElement, DashboardHeroProps>(function DashboardHero(
-  { statsLine },
+  { statsLine, onPrimaryAction },
   ref,
 ) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -114,9 +115,13 @@ export const DashboardHero = forwardRef<HTMLElement, DashboardHeroProps>(functio
   );
 
   const goFlow = () => {
-    setDashboardNavScrollActiveTo(DASHBOARD_SCROLL_TAB_IDS.procesos);
-    scrollToDashboardSection(DASHBOARD_SECTION_IDS.flow);
-  };
+  if (onPrimaryAction) {
+    onPrimaryAction();
+    return;
+  }
+  setDashboardNavScrollActiveTo(DASHBOARD_SCROLL_TAB_IDS.procesos);
+  scrollToDashboardSection(DASHBOARD_SECTION_IDS.flow);
+};
 
   const goNav = () => {
     setDashboardNavScrollActiveTo(DASHBOARD_SCROLL_TAB_IDS.procesos);

@@ -40,3 +40,12 @@ export interface DashboardActiveCard {
   coverImage?: string;
   href: string;
 }
+
+export type UserRole = "gif" | "coordinador";
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  role: UserRole;
+  avatar?: string;
+}
