@@ -1,81 +1,154 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import type { LmsRequest } from "@/types";
+import { materiasApi } from "@/lib/api";
+import { subjectToRequest } from "@/lib/requestDerived";
+import type { AcademicLevel, ApiSubject, ContentTypeCode, LmsRequest } from "@/types";
 
 interface CreateRequestInput {
   subject: string;
-  level: string;
+  level: AcademicLevel;
   source: string;
   summary: string;
   semester: string;
   program: string;
+  contentTypeCodes: ContentTypeCode[];
   createdByName?: string;
 }
 
 interface RequestsState {
-  /** Estado compartido entre GIF y Coordinador. */
   requests: LmsRequest[];
-  /** Crea una nueva solicitud con estado inicial "pendiente". */
-  createRequest: (input: CreateRequestInput) => void;
-  /** Marca una solicitud como "aprobada" y guarda el link de aprobación. */
-  approveRequest: (id: string, approvalLink: string) => void;
-  /** Marca una solicitud como "rechazada" (requiere ajustes) y guarda las observaciones del coordinador. */
-  rejectRequest: (id: string, adjustmentNotes: string) => void;
-  /**
-   * Acción del GIF: notifica que corrigió la solicitud rechazada.
-   * Vuelve la solicitud a "pendiente" para que el coordinador la revise de nuevo.
-   */
-  notifyCorrectionsReady: (id: string) => void;
+  isLoading: boolean;
+  error: string | null;
+  loadRequests: () => Promise<void>;
+  loadMyRequests: () => Promise<void>;
+  loadCoordinatorRequests: () => Promise<void>;
+  createRequest: (input: CreateRequestInput) => Promise<void>;
+  approveRequest: (id: string, cdigitalUrl?: string) => Promise<void>;
+  rejectRequest: (id: string, adjustmentNotes: string) => Promise<void>;
+  notifyCorrectionsReady: (id: string) => Promise<void>;
+  clearRequests: () => void;
 }
 
-const createRequestId = () => `REQ-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+const toRequest = (subject: ApiSubject): LmsRequest => subjectToRequest(subject);
+
+const sortNewestFirst = (requests: LmsRequest[]) =>
+  [...requests].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+const replaceRequest = (requests: LmsRequest[], next: LmsRequest) => {
+  const exists = requests.some((request) => request.id === next.id);
+  return sortNewestFirst(exists ? requests.map((request) => (request.id === next.id ? next : request)) : [next, ...requests]);
+};
+
+const backendId = (id: string) => {
+  const numericId = Number(id);
+  return Number.isInteger(numericId) && numericId > 0 ? numericId : null;
+};
+
+const readError = (error: unknown) => (error instanceof Error ? error.message : "No fue posible conectar con el backend.");
 
 export const useRequestsStore = create<RequestsState>()(
   persist(
     (set) => ({
       requests: [],
-      createRequest: (input) =>
-        set((state) => ({
-          requests: [
-            {
-              id: createRequestId(),
-              subject: input.subject,
-              level: input.level,
-              source: input.source,
-              summary: input.summary,
-              semester: input.semester,
-              program: input.program,
-              status: "pendiente",
-              createdAt: new Date().toISOString(),
-              createdByRole: "gif",
-              createdByName: input.createdByName,
-            },
-            ...state.requests,
-          ],
-        })),
-      approveRequest: (id, approvalLink) =>
-        set((state) => ({
-          requests: state.requests.map((request) =>
-            request.id === id ? { ...request, status: "aprobada", approvalLink } : request,
-          ),
-        })),
-      // Guarda las observaciones junto al estado para que el GIF pueda ver qué debe corregir.
-      rejectRequest: (id, adjustmentNotes) =>
-        set((state) => ({
-          requests: state.requests.map((request) =>
-            request.id === id
-              ? { ...request, status: "rechazada", adjustmentNotes }
-              : request,
-          ),
-        })),
-      // El GIF notifica que hizo correcciones → la solicitud vuelve a "pendiente"
-      // para que el coordinador la encuentre de nuevo en su bandeja.
-      notifyCorrectionsReady: (id) =>
-        set((state) => ({
-          requests: state.requests.map((request) =>
-            request.id === id ? { ...request, status: "pendiente" } : request,
-          ),
-        })),
+      isLoading: false,
+      error: null,
+      loadRequests: async () => {
+        set({ isLoading: true, error: null });
+        try {
+          const subjects = await materiasApi.list();
+          set({ requests: sortNewestFirst(subjects.map(toRequest)), isLoading: false });
+        } catch (error) {
+          set({ isLoading: false, error: readError(error) });
+          throw error;
+        }
+      },
+      loadMyRequests: async () => {
+        set({ isLoading: true, error: null });
+        try {
+          const subjects = await materiasApi.mine();
+          set({ requests: sortNewestFirst(subjects.map(toRequest)), isLoading: false });
+        } catch (error) {
+          set({ isLoading: false, error: readError(error) });
+          throw error;
+        }
+      },
+      loadCoordinatorRequests: async () => {
+        set({ isLoading: true, error: null });
+        try {
+          const subjects = await materiasApi.list();
+          set({ requests: sortNewestFirst(subjects.map(toRequest)), isLoading: false });
+        } catch (error) {
+          set({ isLoading: false, error: readError(error) });
+          throw error;
+        }
+      },
+      createRequest: async (input) => {
+        set({ isLoading: true, error: null });
+        try {
+          const subject = await materiasApi.create({
+            name: input.subject,
+            semester: input.semester,
+            academicLevel: input.level,
+            programName: input.program,
+            contentDescription: input.summary,
+            driveFolderUrl: input.source,
+            contentTypeCodes: input.contentTypeCodes,
+          });
+          set((state) => ({
+            requests: replaceRequest(state.requests, toRequest(subject)),
+            isLoading: false,
+          }));
+        } catch (error) {
+          set({ isLoading: false, error: readError(error) });
+          throw error;
+        }
+      },
+      approveRequest: async (id, cdigitalUrl) => {
+        const numericId = backendId(id);
+        if (!numericId) {
+          set((state) => ({
+            requests: state.requests.map((request) =>
+              request.id === id ? { ...request, status: "aprobado" } : request,
+            ),
+          }));
+          return;
+        }
+
+        const subject = await materiasApi.updateStatus(numericId, { newStatus: "aprobado", cdigitalUrl });
+        set((state) => ({ requests: replaceRequest(state.requests, toRequest(subject)) }));
+      },
+      rejectRequest: async (id, adjustmentNotes) => {
+        const numericId = backendId(id);
+        if (!numericId) {
+          set((state) => ({
+            requests: state.requests.map((request) =>
+              request.id === id ? { ...request, status: "requiere_ajustes", adjustmentNotes } : request,
+            ),
+          }));
+          return;
+        }
+
+        const subject = await materiasApi.updateStatus(numericId, {
+          newStatus: "requiere_ajustes",
+          observation: adjustmentNotes,
+        });
+        set((state) => ({ requests: replaceRequest(state.requests, toRequest(subject)) }));
+      },
+      notifyCorrectionsReady: async (id) => {
+        const numericId = backendId(id);
+        if (!numericId) {
+          set((state) => ({
+            requests: state.requests.map((request) =>
+              request.id === id ? { ...request, status: "pendiente" } : request,
+            ),
+          }));
+          return;
+        }
+
+        const subject = await materiasApi.updateStatus(numericId, { newStatus: "pendiente" });
+        set((state) => ({ requests: replaceRequest(state.requests, toRequest(subject)) }));
+      },
+      clearRequests: () => set({ requests: [], error: null, isLoading: false }),
     }),
     {
       name: "carga-lms-requests",

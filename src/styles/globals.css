@@ -1,5 +1,30 @@
 @import "tailwindcss";
 
+/* Palpito en pastillas de estado: coordinador (pendiente) y GIF (requiere ajustes). */
+@theme {
+  --animate-status-badge-attention: status-badge-attention-throb 1.75s ease-in-out
+    infinite;
+}
+
+@keyframes status-badge-attention-throb {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  5% {
+    transform: scale(1.085);
+  }
+  11% {
+    transform: scale(1);
+  }
+  17% {
+    transform: scale(1.06);
+  }
+  24% {
+    transform: scale(1);
+  }
+}
+
 :root {
   --canvas: #f1f5f9;
   --surface: #ffffff;

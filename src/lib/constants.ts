@@ -1,9 +1,15 @@
-﻿export const STATUS_COLORS: Record<string, string> = {
-  Submitted: "bg-sky-50/90 text-sky-800 ring-1 ring-inset ring-sky-200/60",
-  "In Review": "bg-violet-50/90 text-violet-800 ring-1 ring-inset ring-violet-200/60",
-  "Requires Finalization":
-    "bg-amber-50/90 text-amber-900 ring-1 ring-inset ring-amber-200/50",
-  Completed: "bg-emerald-50/90 text-emerald-800 ring-1 ring-inset ring-emerald-200/60",
+import type { RequestStatus } from "@/types";
+
+export const REQUEST_STATUS_LABELS: Record<RequestStatus, string> = {
+  pendiente: "PENDIENTE",
+  aprobado: "APROBADO",
+  requiere_ajustes: "REQUIERE AJUSTES",
+};
+
+export const STATUS_COLORS: Record<string, string> = {
+  pendiente: "bg-amber-50/90 text-amber-800 ring-1 ring-inset ring-amber-200/60",
+  aprobado: "bg-emerald-50/90 text-emerald-800 ring-1 ring-inset ring-emerald-200/60",
+  requiere_ajustes: "bg-orange-50/90 text-orange-800 ring-1 ring-inset ring-orange-200/60",
 };
 
 export const PRIORITY_STYLES: Record<string, string> = {
@@ -13,8 +19,7 @@ export const PRIORITY_STYLES: Record<string, string> = {
 };
 
 export const PIPELINE_COLUMN_ACCENT: Record<string, string> = {
-  Submitted: "from-sky-500 to-sky-400",
-  "In Review": "from-violet-500 to-violet-400",
-  "Requires Finalization": "from-amber-500 to-amber-400",
-  Completed: "from-emerald-500 to-emerald-400",
+  pendiente: "from-amber-500 to-amber-400",
+  aprobado: "from-emerald-500 to-emerald-400",
+  requiere_ajustes: "from-orange-500 to-orange-400",
 };

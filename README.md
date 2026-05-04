@@ -217,7 +217,7 @@ Resultado:
 Tipos principales en `src/types/index.ts`:
 
 - `UserRole`: `gif` | `coordinador`
-- `RequestStatus`: `pendiente` | `en_revision` | `aprobada` | `rechazada`
+- `RequestStatus`: `pendiente` | `aprobado` | `requiere_ajustes`
 - `LmsRequest`: entidad de solicitud GIF-Coordinador
 - `ProcessItem`: entidad para tableros mock de pipeline/historial
 - `ActivityEntry`: entidad de timeline operacional
@@ -244,7 +244,7 @@ Notas:
 1. Ingresa por `/login` con correo tipo coordinador.
 2. El rol queda como `coordinador`.
 3. Ve solicitudes compartidas en dashboard.
-4. Puede mover estado a revisión/aprobada/rechazada.
+4. Puede aprobar o solicitar ajustes a las solicitudes pendientes.
 
 ### Persistencia
 
@@ -361,14 +361,14 @@ npm run preview
 
 Estado actual:
 
-- frontend opera en modo mock/local.
-- no hay consumo HTTP real en este proyecto para solicitudes GIF/Coordinador.
+- autenticación real con Google Identity Services contra el backend.
+- solicitudes GIF/Coordinador consumen la API NestJS de materias.
+- catálogos de tipos de contenido y semestres se leen desde backend.
 
-Implicaciones:
+Pendiente de integración completa:
 
-- no hay persistencia server-side.
-- no hay auth real con tokens.
-- toda la persistencia actual de solicitudes es `localStorage`.
+- pipeline, actividad, revisión detallada e histórico aún usan datos mock.
+- `localStorage` se conserva como cache/hidratación local del store.
 
 ---
 

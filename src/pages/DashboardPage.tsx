@@ -1,10 +1,11 @@
 ﻿import { motion } from "framer-motion";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { CoordinatorRequestsSection } from "@/components/coordinator/CoordinatorRequestsSection";
+import { CoordinatorRequestsSection } from "@/components/coordinator/CoordinatorRequestSection";
 import { DashboardEntryTransition } from "@/components/dashboard/DashboardEntryTransition";
 import { DashboardHero } from "@/components/dashboard/DashboardHero";
 import { DriveSubmissionSection } from "@/components/submissions/DriveSubmissionSection";
+import { materiasApi } from "@/lib/api";
 import type { AuthNavigationState, AuthProfile } from "@/lib/authExperience";
 import { AUTH_EXPERIENCE_INTENSITY } from "@/lib/authExperience";
 import {
@@ -12,8 +13,10 @@ import {
   dashboardSectionIdFromHash,
   scrollToDashboardSection,
 } from "@/lib/dashboardSectionIds";
-import { activityFeed, processes } from "@/data/mockProcesses";
+import { mapBackendRoleToUiRole, useAuthStore } from "@/store/authStore";
+import { useRequestsStore } from "@/store/requestsStore";
 import { useUIStore } from "@/store/uiStore";
+import type { ApiSubjectMetrics } from "@/types";
 
 const NAV_SWITCH_PX = 80;
 
@@ -23,6 +26,7 @@ export function DashboardPage() {
   const heroDarkRef = useRef<HTMLElement | null>(null);
   const setDashboardNavOverLight = useUIStore((s) => s.setDashboardNavOverLight);
   const setDashboardNavScrollActiveTo = useUIStore((s) => s.setDashboardNavScrollActiveTo);
+  const authUser = useAuthStore((state) => state.user);
   const navState = (location.state ?? null) as AuthNavigationState | null;
   /** Captura en el primer montaje: al limpiar `state` con `replace`, el perfil ya no debe cambiar a mitad de la animación. */
   const [entrySession] = useState<{ fromAuth: boolean; profile: AuthProfile }>(() => ({
@@ -40,13 +44,27 @@ export function DashboardPage() {
   );
   const dashboardRevealDuration = entrySession.fromAuth && entrySession.profile === "full" ? 1.05 : 0.26;
 
-  const activeQueue = processes.filter((p) => p.status !== "Completed");
-  const inReviewCount = processes.filter((p) => p.status === "In Review").length;
-  const userRole = useUIStore((state) => state.userRole);
+  const fallbackUserRole = useUIStore((state) => state.userRole);
+  const userRole = authUser ? mapBackendRoleToUiRole(authUser.role) : fallbackUserRole;
+  const loadRequests = useRequestsStore((state) => state.loadRequests);
+  const [metrics, setMetrics] = useState<ApiSubjectMetrics | null>(null);
+  const activeCount = metrics?.active ?? 0;
+  const pendingCount = metrics?.pending ?? 0;
+  const todayCount = metrics?.today ?? 0;
   const statsLine =
     userRole === "coordinador"
-      ? `Panel de coordinación · ${activeQueue.length} procesos activos · ${inReviewCount} en revisión`
-      : `${activeQueue.length} Solicitudes activas · ${inReviewCount} en revisión · ${activityFeed.length} Pendientes de aprobación`;
+      ? `Panel de coordinación · ${activeCount} procesos activos · ${pendingCount} pendientes`
+      : `${activeCount} procesos activos · ${pendingCount} pendientes · ${todayCount} solicitudes de hoy`;
+
+  useEffect(() => {
+    if (!authUser) return;
+    void Promise.all([loadRequests(), materiasApi.metrics()])
+      .then(([, nextMetrics]) => setMetrics(nextMetrics))
+      .catch(() => {
+        // Las secciones operativas muestran feedback puntual si una petición falla.
+      });
+  }, [authUser, loadRequests]);
+
   useEffect(() => {
     const tick = () => {
       const el = heroDarkRef.current;

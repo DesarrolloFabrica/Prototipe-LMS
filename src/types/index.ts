@@ -1,4 +1,5 @@
-export type Status = "Submitted" | "In Review" | "Requires Finalization" | "Completed";
+export type RequestStatus = "pendiente" | "aprobado" | "requiere_ajustes";
+export type Status = RequestStatus;
 
 export interface ProcessItem {
   id: string;
@@ -8,11 +9,8 @@ export interface ProcessItem {
   status: Status;
   priority: "Low" | "Medium" | "High";
   updatedAt: string;
-  /** Imagen de cabecera para tarjetas tipo showcase (URL absoluta o bajo /public). */
   coverImage?: string;
-  /** Etiqueta corta tipo "hace 2 h" para tableros */
   timeLabel?: string;
-  /** Solo procesos cerrados (historial) */
   closedAt?: string;
   archiveUrl?: string;
 }
@@ -27,7 +25,6 @@ export interface ActivityEntry {
   linkedStatus?: string;
 }
 
-/** Tarjeta del panel «Procesos activos»: cola editorial o atajo a una vista con ruta real. */
 export interface DashboardActiveCard {
   id: string;
   subject: string;
@@ -43,17 +40,131 @@ export interface DashboardActiveCard {
 
 export type UserRole = "gif" | "coordinador";
 
-/**
- * Estado del ciclo de vida de una solicitud LMS.
- * Nota: "en_revision" fue eliminado. Las solicitudes corregidas vuelven a "pendiente".
- */
-export type RequestStatus = "pendiente" | "aprobada" | "rechazada";
+export type BackendUserRole = "FABRICA" | "LMS" | "ADMIN";
+export type AcademicLevel = "PREGRADO" | "POSGRADO" | "ESPECIALIZACION" | "DIPLOMADO";
+export type ContentTypeCode =
+  | "VIDEO"
+  | "PDF"
+  | "PODCAST"
+  | "PRESENTACION"
+  | "ACTIVIDAD_INTERACTIVA"
+  | "EVALUACION"
+  | "SCORM"
+  | "OTRO";
+export type SubjectStatus = RequestStatus;
 
-/** Solicitud creada por GIF y gestionada por Coordinación. */
+export interface ApiUser {
+  id: number;
+  email: string;
+  fullName: string;
+  role: BackendUserRole;
+  area?: string | null;
+  avatarUrl?: string | null;
+  isActive: boolean;
+}
+
+export interface ApiContentType {
+  id: number;
+  code: ContentTypeCode;
+  name: string;
+  isActive: boolean;
+}
+
+export interface ApiSemester {
+  id: number;
+  code: string;
+  name: string;
+  sortOrder: number;
+  isActive: boolean;
+}
+
+export interface ApiProgram {
+  id: number;
+  code: string;
+  name: string;
+  sortOrder: number;
+  isActive: boolean;
+}
+
+export interface ApiComment {
+  id: number;
+  commentType: "GENERAL" | "DEVOLUCION" | "ERROR" | "CIERRE";
+  content: string;
+  createdAt: string;
+  author?: Pick<ApiUser, "id" | "email" | "fullName" | "role">;
+}
+
+export interface ApiSubject {
+  id: number;
+  name: string;
+  semester: string;
+  academicLevel: AcademicLevel;
+  programName?: string | null;
+  contentDescription: string;
+  driveFolderUrl: string;
+  cdigitalUrl?: string | null;
+  currentStatus: SubjectStatus;
+  createdByUserId: number;
+  assignedLmsUserId?: number | null;
+  reviewedAt?: string | null;
+  completedAt?: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  createdBy?: Pick<ApiUser, "id" | "email" | "fullName" | "role">;
+  assignedLmsUser?: Pick<ApiUser, "id" | "email" | "fullName" | "role"> | null;
+  contentTypes?: ApiContentType[];
+  comments?: ApiComment[];
+}
+
+export interface ApiSubjectMetrics {
+  total: number;
+  active: number;
+  pending: number;
+  requiresAdjustments: number;
+  approved: number;
+  today: number;
+  byStatus: Record<RequestStatus, number>;
+}
+
+export interface ApiActivityEntry {
+  id: string;
+  type: string;
+  subjectId: number;
+  subjectName: string;
+  text: string;
+  actor: string;
+  linkedStatus?: RequestStatus;
+  createdAt: string;
+}
+
+export interface AuthSession {
+  tokenType: "Cookie";
+  expiresIn: string;
+  user: ApiUser;
+}
+
+export interface CreateSubjectPayload {
+  name: string;
+  semester: string;
+  academicLevel: AcademicLevel;
+  programName: string;
+  contentDescription: string;
+  driveFolderUrl: string;
+  contentTypeCodes: ContentTypeCode[];
+}
+
+export interface UpdateSubjectStatusPayload {
+  newStatus: SubjectStatus;
+  observation?: string;
+  cdigitalUrl?: string;
+  assignedLmsUserId?: number;
+}
+
 export interface LmsRequest {
   id: string;
   subject: string;
-  level: string;
+  level: AcademicLevel;
   source: string;
   summary: string;
   status: RequestStatus;
@@ -62,9 +173,9 @@ export interface LmsRequest {
   createdByName?: string;
   semester: string;
   program: string;
-  /** Observaciones del coordinador al solicitar ajustes. Solo presente cuando status === "rechazada". */
+  contentTypes?: Pick<ApiContentType, "code" | "name">[];
   adjustmentNotes?: string;
-  /** Link final compartido al aprobar la solicitud. Solo presente cuando status === "aprobada". */
+  /** Link final compartido al aprobar la solicitud. Solo presente cuando status === "aprobado". */
   approvalLink?: string;
 }
 

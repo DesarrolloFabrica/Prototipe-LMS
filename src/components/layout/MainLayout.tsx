@@ -1,9 +1,24 @@
-﻿import { Outlet, useLocation } from "react-router-dom";
+import { useEffect } from "react";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { TopNavigation } from "@/components/layout/TopNavigation";
+import { mapBackendRoleToUiRole, useAuthStore } from "@/store/authStore";
+import { useUIStore } from "@/store/uiStore";
 
 export function MainLayout() {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const isDashboardHero = pathname === "/dashboard";
+  const user = useAuthStore((state) => state.user);
+  const setUserRole = useUIStore((state) => state.setUserRole);
+
+  useEffect(() => {
+    if (!user) {
+      navigate("/login", { replace: true });
+      return;
+    }
+
+    setUserRole(mapBackendRoleToUiRole(user.role));
+  }, [navigate, setUserRole, user]);
 
   return (
     <div className="relative min-h-dvh overflow-x-hidden bg-[#f1f5f9] text-slate-900">

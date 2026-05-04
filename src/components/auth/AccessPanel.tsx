@@ -1,16 +1,37 @@
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useUIStore } from "@/store/uiStore";
-import { motion } from "framer-motion";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { motion } from "framer-motion";
+import { toast } from "sonner";
+import { authApi } from "@/lib/api";
 import type { AuthProgressStep } from "@/lib/authExperience";
 import { AUTH_PROGRESS_MESSAGES } from "@/lib/authExperience";
+import { mapBackendRoleToUiRole, useAuthStore } from "@/store/authStore";
+import { useUIStore } from "@/store/uiStore";
 
-const schema = z.object({ email: z.email(), password: z.string().min(6) });
-type FormData = z.infer<typeof schema>;
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize: (config: {
+            client_id: string;
+            callback: (response: { credential?: string }) => void;
+          }) => void;
+          renderButton: (
+            parent: HTMLElement,
+            options: {
+              theme?: "outline" | "filled_blue" | "filled_black";
+              size?: "large" | "medium" | "small";
+              text?: "signin_with" | "signup_with" | "continue_with" | "signin";
+              shape?: "pill" | "rectangular" | "circle" | "square";
+              width?: number;
+            },
+          ) => void;
+        };
+      };
+    };
+  }
+}
 
 type AccessPanelProps = {
   disabled: boolean;
@@ -21,6 +42,8 @@ type AccessPanelProps = {
   onInteract: () => void;
 };
 
+const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
+
 export function AccessPanel({
   disabled,
   isAuthenticating,
@@ -29,25 +52,89 @@ export function AccessPanel({
   onSubmitAccess,
   onInteract,
 }: AccessPanelProps) {
+  const googleButtonRef = useRef<HTMLDivElement | null>(null);
+  const [isSigningIn, setIsSigningIn] = useState(false);
+  const [scriptReady, setScriptReady] = useState(false);
+  const [scriptFailed, setScriptFailed] = useState(false);
+  const [buttonRendered, setButtonRendered] = useState(false);
+  const setSession = useAuthStore((state) => state.setSession);
   const setUserRole = useUIStore((state) => state.setUserRole);
-  const {
-    register,
-    handleSubmit,
-    watch,
-    formState: { errors },
-  } = useForm<FormData>({ resolver: zodResolver(schema) });
 
-  const handleAccessSubmit = (data: FormData) => {
+  const handleCredential = useCallback(
+    async (credential?: string) => {
+      if (!credential) {
+        toast.error("Google no devolvio una credencial valida.");
+        return;
+      }
 
-    const normalizedEmail = data.email.trim().toLowerCase();
+      try {
+        setIsSigningIn(true);
+        onInteract();
+        const session = await authApi.loginWithGoogle(credential);
+        setSession(session);
+        setUserRole(mapBackendRoleToUiRole(session.user.role));
+        toast.success(`Bienvenido, ${session.user.fullName}`);
+        onSubmitAccess();
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "No fue posible iniciar sesion.";
+        toast.error(message);
+      } finally {
+        setIsSigningIn(false);
+      }
+    },
+    [onInteract, onSubmitAccess, setSession, setUserRole],
+  );
 
-    if (normalizedEmail.includes("coordinador")) {
-      setUserRole("coordinador");
-    } else {
-      setUserRole("gif");
+  useEffect(() => {
+    if (!googleClientId) return undefined;
+
+    const existing = document.getElementById("google-identity-services");
+    if (existing) {
+      if (window.google) {
+        setScriptReady(true);
+      } else {
+        existing.addEventListener("load", () => setScriptReady(true), { once: true });
+        existing.addEventListener("error", () => setScriptFailed(true), { once: true });
+      }
+      return undefined;
     }
-    onSubmitAccess();
-  };
+
+    const script = document.createElement("script");
+    script.id = "google-identity-services";
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    script.onload = () => setScriptReady(true);
+    script.onerror = () => {
+      setScriptFailed(true);
+      toast.error("No se pudo cargar Google Identity Services.");
+    };
+    document.head.appendChild(script);
+
+    return undefined;
+  }, []);
+
+  useEffect(() => {
+    const buttonHost = googleButtonRef.current;
+    if (!scriptReady || !googleClientId || !buttonHost || !window.google) return;
+
+    buttonHost.innerHTML = "";
+    setButtonRendered(false);
+    window.google.accounts.id.initialize({
+      client_id: googleClientId,
+      callback: (response) => void handleCredential(response.credential),
+    });
+    window.google.accounts.id.renderButton(buttonHost, {
+      theme: "outline",
+      size: "large",
+      text: "signin_with",
+      shape: "pill",
+      width: 320,
+    });
+    window.requestAnimationFrame(() => setButtonRendered(true));
+  }, [handleCredential, scriptReady]);
+
+  const busy = disabled || isAuthenticating || isSigningIn;
 
   return (
     <motion.section
@@ -65,16 +152,12 @@ export function AccessPanel({
         ease: [0.45, 0, 0.55, 1]
       }}
       className="relative overflow-hidden rounded-[3rem] border border-white/40 bg-white/70 p-10 shadow-[0_40px_100px_-20px_rgba(15,23,42,0.1)] backdrop-blur-3xl sm:p-14"
+      onMouseEnter={onInteract}
     >
       <div className="absolute inset-0 bg-linear-to-br from-blue-50/30 via-transparent to-indigo-50/30" aria-hidden />
 
-      <form
-        className="relative z-10 space-y-6"
-        onSubmit={handleSubmit(handleAccessSubmit)}
-        onFocus={onInteract}
-        onChange={onInteract}
-      >
-        <header className="flex flex-col items-center text-center space-y-4 mb-2">
+      <div className="relative z-10 space-y-6">
+        <header className="mb-2 flex flex-col items-center space-y-4 text-center">
           <div className="flex h-28 w-28 items-center justify-center" style={{ transform: "translateZ(0)" }}>
             <DotLottieReact
               src="/videos/User.lottie"
@@ -85,74 +168,63 @@ export function AccessPanel({
           </div>
           <div className="space-y-2">
             <h1 className="text-3xl font-bold tracking-tight text-slate-900">Accede a tu entorno</h1>
-            <p className="text-sm font-medium text-slate-500">Inicia sesión para abrir tu espacio operativo en Carga LMS.</p>
+            <p className="text-sm font-medium text-slate-500">
+              Inicia sesion con tu cuenta institucional de Google para abrir Carga LMS.
+            </p>
           </div>
         </header>
 
-        <div className="space-y-2">
-          <label htmlFor="email" className="ml-1 text-[11px] font-bold uppercase tracking-[0.2em] text-blue-600">
-            Correo institucional
-          </label>
-          <Input
-            id="email"
-            placeholder="correo@carga.com"
-            autoComplete="email"
-            disabled={disabled}
-            className="border-slate-200 bg-white/50 text-slate-900 placeholder:text-slate-400 hover:border-blue-300 focus:border-blue-500/50"
-            {...register("email")}
-          />
-          {errors.email ? <p className="ml-1 text-xs text-rose-600 font-bold">Ingresa un correo válido.</p> : null}
+        <div className="flex flex-col items-center gap-3 rounded-3xl border border-blue-100/60 bg-white/60 p-5">
+          {googleClientId ? (
+            <>
+              <div className="flex min-h-11 w-full justify-center">
+                <div
+                  ref={googleButtonRef}
+                  className={busy ? "pointer-events-none opacity-60" : undefined}
+                  aria-busy={busy}
+                />
+              </div>
+              {!scriptReady && !scriptFailed ? (
+                <div className="flex h-11 w-full max-w-xs items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-semibold text-slate-500 shadow-sm">
+                  Cargando boton de Google...
+                </div>
+              ) : null}
+              {scriptFailed ? (
+                <p className="text-center text-sm font-semibold text-rose-600">
+                  No se pudo cargar el boton de Google. Revisa conexion, bloqueadores o configuracion del navegador.
+                </p>
+              ) : null}
+              {scriptReady && !buttonRendered ? (
+                <p className="text-center text-xs font-semibold text-slate-500">
+                  Preparando acceso con Google...
+                </p>
+              ) : null}
+              {busy ? (
+                <p className="text-center text-xs font-bold uppercase tracking-wider text-blue-600">
+                  {isSigningIn ? "Validando con Google" : AUTH_PROGRESS_MESSAGES[progressStep]}
+                </p>
+              ) : null}
+            </>
+          ) : (
+            <p className="text-center text-sm font-semibold text-rose-600">
+              Falta configurar VITE_GOOGLE_CLIENT_ID en el archivo .env del frontend.
+            </p>
+          )}
         </div>
 
-        <div className="space-y-2">
-          <label htmlFor="password" className="ml-1 text-[11px] font-bold uppercase tracking-[0.2em] text-blue-600">
-            Contraseña
-          </label>
-          <Input
-            id="password"
-            type="password"
-            placeholder="••••••"
-            autoComplete="current-password"
-            disabled={disabled}
-            className="border-slate-200 bg-white/50 text-slate-900 placeholder:text-slate-400 hover:border-blue-300 focus:border-blue-500/50"
-            {...register("password")}
-          />
-          {errors.password ? <p className="ml-1 text-xs text-rose-600 font-bold">Mínimo 6 caracteres.</p> : null}
-        </div>
-
-        <div className="pt-2">
-          <Button type="submit" className="group relative w-full h-12 text-base bg-blue-600 hover:bg-blue-700 text-white shadow-[0_10px_20px_rgba(37,99,235,0.2)] hover:shadow-[0_15px_30px_rgba(37,99,235,0.3)] transition-all border-none" disabled={disabled}>
-            <span className="relative z-10 font-bold">{isAuthenticating ? AUTH_PROGRESS_MESSAGES[progressStep] : "Acceder al sistema"}</span>
-            <div className="absolute inset-0 -translate-x-full bg-linear-to-r from-transparent via-white/20 to-transparent transition-transform duration-1000 group-hover:translate-x-full" />
-          </Button>
-        </div>
-
-        {/* Bloque de sugerencias de acceso para prototipo */}
-        <div className="mt-4 space-y-3 rounded-2xl bg-blue-50/50 p-4 border border-blue-100/50 backdrop-blur-sm">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-blue-600/70 text-center mb-1">
-            Credenciales de acceso rápido
+        <div className="rounded-2xl border border-blue-100/50 bg-blue-50/50 p-4 backdrop-blur-sm">
+          <p className="text-center text-[10px] font-bold uppercase tracking-widest text-blue-600/70">
+            Acceso federado
           </p>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <p className="text-[9px] font-black uppercase text-slate-400">Usuario GIF</p>
-              <code className="text-[11px] font-mono font-bold text-slate-700 bg-white/80 px-2 py-1 rounded-md block text-center">
-                gif@carga.com
-              </code>
-            </div>
-            <div className="space-y-1 border-l border-blue-200/30 pl-3">
-              <p className="text-[9px] font-black uppercase text-indigo-500">Coordinador</p>
-              <code className="text-[11px] font-mono font-bold text-indigo-700 bg-white/80 px-2 py-1 rounded-md block text-center">
-                coordinador@carga.com
-              </code>
-            </div>
-          </div>
-          <p className="text-[9px] text-center text-slate-400 font-medium italic">
-            * Clave provisional: 123456
+          <p className="mt-2 text-center text-xs font-medium leading-relaxed text-slate-500">
+            Usa tu cuenta institucional autorizada para continuar.
           </p>
         </div>
 
-        <p className="text-center text-xs font-bold text-slate-400 uppercase tracking-wider">Acceso institucional protegido</p>
-      </form>
+        <p className="text-center text-xs font-bold uppercase tracking-wider text-slate-400">
+          Acceso institucional protegido
+        </p>
+      </div>
     </motion.section>
   );
 }

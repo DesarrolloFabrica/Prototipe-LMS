@@ -18,13 +18,11 @@ function initials(name: string) {
 
 function pipelineProgress(status: ProcessItem["status"]) {
   switch (status) {
-    case "Submitted":
-      return 28;
-    case "In Review":
-      return 52;
-    case "Requires Finalization":
-      return 78;
-    case "Completed":
+    case "pendiente":
+      return 35;
+    case "requiere_ajustes":
+      return 65;
+    case "aprobado":
       return 100;
     default:
       return 20;

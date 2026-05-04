@@ -1,4 +1,3 @@
-import type { LucideIcon } from "lucide-react";
 import type { MutableRefObject, Ref } from "react";
 import { forwardRef, useCallback, useEffect, useRef } from "react";
 
@@ -7,7 +6,7 @@ import {
   useReducedMotion,
 } from "framer-motion";
 
-import { Activity, FilePlus, GitBranch, History, Sparkles, Binary, Cpu } from "lucide-react";
+import { Binary, Cpu, GitBranch } from "lucide-react";
 
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 
@@ -28,7 +27,6 @@ import {
 import { useMediaMotionProfile } from "@/hooks/useMediaMotionProfile";
 import { useParallaxMouse } from "@/hooks/useParallaxMouse";
 import { useUIStore } from "@/store/uiStore";
-import { cn } from "@/lib/cn";
 
 export type DashboardHeroProps = {
   statsLine: string;
@@ -42,9 +40,6 @@ function assignRef<T>(instanceRef: Ref<T> | undefined, node: T | null) {
 }
 
 const HERO_VIDEO_SRC = "/videos/background.mp4";
-
-const FLOW_LEGEND: { title: string; description: string; icon: LucideIcon; featured?: boolean }[] = [
-];
 
 export const DashboardHero = forwardRef<HTMLElement, DashboardHeroProps>(function DashboardHero(
   { statsLine, onPrimaryAction },
@@ -95,11 +90,6 @@ export const DashboardHero = forwardRef<HTMLElement, DashboardHeroProps>(functio
     }
     setDashboardNavScrollActiveTo(DASHBOARD_SCROLL_TAB_IDS.procesos);
     scrollToDashboardSection(DASHBOARD_SECTION_IDS.flow);
-  };
-
-  const goNav = () => {
-    setDashboardNavScrollActiveTo(DASHBOARD_SCROLL_TAB_IDS.procesos);
-    scrollToDashboardSection(DASHBOARD_SECTION_IDS.processes);
   };
 
   const shiftX = parallax.enabled ? parallax.x * 10 : 0;
@@ -229,3 +219,4 @@ export const DashboardHero = forwardRef<HTMLElement, DashboardHeroProps>(functio
     </div>
   );
 });
+

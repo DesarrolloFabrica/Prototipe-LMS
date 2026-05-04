@@ -1,14 +1,17 @@
+import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
+import { toast } from "sonner";
 import { RevealOnScroll } from "@/components/common/RevealOnScroll";
 import { MainContentContainer } from "@/components/layout/MainContentContainer";
-import { activityFeed } from "@/data/mockProcesses";
 import { ActivityFeedItem } from "@/components/shared/ActivityFeedItem";
 import { Card } from "@/components/ui/Card";
-import { motionDuration, motionEase } from "@/lib/animations";
 import { Activity, Zap, TrendingUp, Users, Terminal } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { materiasApi } from "@/lib/api";
+import { apiActivityToEntry } from "@/lib/requestDerived";
+import type { ActivityEntry } from "@/types";
 
-function countByType() {
+function countByType(activityFeed: ActivityEntry[]) {
   const m: Record<string, number> = {};
   for (const e of activityFeed) {
     m[e.type] = (m[e.type] ?? 0) + 1;
@@ -17,9 +20,18 @@ function countByType() {
 }
 
 export function ActivityPage() {
-  const byType = countByType();
+  const [activityFeed, setActivityFeed] = useState<ActivityEntry[]>([]);
+  const byType = countByType(activityFeed);
   const latest = activityFeed[0];
   const reducedMotion = useReducedMotion() === true;
+  const actorCount = new Set(activityFeed.map((entry) => entry.actor)).size;
+
+  useEffect(() => {
+    void materiasApi
+      .activity()
+      .then((entries) => setActivityFeed(entries.map(apiActivityToEntry)))
+      .catch((error) => toast.error(readError(error)));
+  }, []);
 
   return (
     <MainContentContainer className="space-y-8 relative pb-20">
@@ -52,7 +64,7 @@ export function ActivityPage() {
               {[
                 { label: "Eventos", val: activityFeed.length, icon: Zap, color: "text-blue-600", bg: "bg-blue-50" },
                 { label: "Tipos", val: byType.length, icon: TrendingUp, color: "text-indigo-600", bg: "bg-indigo-50" },
-                { label: "Actores", val: 2, icon: Users, color: "text-emerald-600", bg: "bg-emerald-50" },
+                { label: "Actores", val: actorCount, icon: Users, color: "text-emerald-600", bg: "bg-emerald-50" },
               ].map((stat, i) => (
                 <motion.div
                   key={stat.label}
@@ -98,19 +110,23 @@ export function ActivityPage() {
               {/* Línea vertical decorativa extendida */}
               <div className="absolute left-[17px] top-2 bottom-2 w-px bg-linear-to-b from-indigo-500 via-slate-200 to-transparent" />
               
-              {activityFeed.map((a, i) => (
-                <ActivityFeedItem
-                  key={a.id}
-                  type={a.type}
-                  text={a.text}
-                  at={a.at}
-                  time={a.time}
-                  actor={a.actor}
-                  linkedStatus={a.linkedStatus}
-                  isLast={i === activityFeed.length - 1}
-                  highlighted={i === 0}
-                />
-              ))}
+              {activityFeed.length === 0 ? (
+                <p className="pl-12 text-sm font-semibold text-slate-500">Aun no hay actividad real registrada.</p>
+              ) : (
+                activityFeed.map((a, i) => (
+                  <ActivityFeedItem
+                    key={a.id}
+                    type={a.type}
+                    text={a.text}
+                    at={a.at}
+                    time={a.time}
+                    actor={a.actor}
+                    linkedStatus={a.linkedStatus}
+                    isLast={i === activityFeed.length - 1}
+                    highlighted={i === 0}
+                  />
+                ))
+              )}
             </div>
           </RevealOnScroll>
         </div>
@@ -144,7 +160,7 @@ export function ActivityPage() {
                       <div className="h-1 w-12 rounded-full bg-slate-100 overflow-hidden">
                         <div 
                           className="h-full bg-indigo-500" 
-                          style={{ width: `${(n / activityFeed.length) * 100}%` }}
+                  style={{ width: `${activityFeed.length === 0 ? 0 : (n / activityFeed.length) * 100}%` }}
                         />
                       </div>
                       <span className="font-mono text-xs font-black text-slate-900">{n}</span>
@@ -160,10 +176,10 @@ export function ActivityPage() {
                   </div>
                   <span className="text-[9px] font-black uppercase tracking-widest text-white/80">Operative Insight</span>
                 </div>
-                <p className="text-sm font-bold leading-relaxed">{latest?.text}</p>
+                <p className="text-sm font-bold leading-relaxed">{latest?.text ?? "Sin actividad reciente."}</p>
                 <div className="mt-4 flex items-center justify-between border-t border-white/10 pt-4">
-                  <span className="text-[10px] font-bold text-white/60">{latest?.actor}</span>
-                  <span className="text-[10px] font-black text-white/80">{latest?.time}</span>
+                  <span className="text-[10px] font-bold text-white/60">{latest?.actor ?? "Sistema"}</span>
+                  <span className="text-[10px] font-black text-white/80">{latest?.time ?? "--:--"}</span>
                 </div>
               </div>
             </Card>
@@ -172,4 +188,8 @@ export function ActivityPage() {
       </div>
     </MainContentContainer>
   );
+}
+
+function readError(error: unknown) {
+  return error instanceof Error ? error.message : "No fue posible cargar la actividad.";
 }

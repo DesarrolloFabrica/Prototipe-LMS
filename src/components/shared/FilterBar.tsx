@@ -1,6 +1,5 @@
 import { SlidersHorizontal, Search, Layers, ShieldCheck } from "lucide-react";
 import { Input } from "@/components/ui/Input";
-import { motion } from "framer-motion";
 
 export function FilterBar() {
   return (

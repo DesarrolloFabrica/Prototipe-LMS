@@ -1,16 +1,25 @@
+import { useEffect } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { ExternalLink, Database, Search, Download, FileCheck, User, Calendar } from "lucide-react";
+import { ExternalLink, Database, Download, FileCheck, User, Calendar } from "lucide-react";
+import { toast } from "sonner";
 import { RevealOnScroll } from "@/components/common/RevealOnScroll";
 import { MainContentContainer } from "@/components/layout/MainContentContainer";
 import { Button } from "@/components/ui/Button";
 import { FilterBar } from "@/components/shared/FilterBar";
 import { StatusPill } from "@/components/shared/StatusPill";
-import { motionDuration, motionEase } from "@/lib/animations";
-import { historyItems } from "@/data/historyItems";
-import { cn } from "@/lib/cn";
+import { motionEase } from "@/lib/animations";
+import { formatRequestDateLabel, requestCode, requestOwner } from "@/lib/requestDerived";
+import { useRequestsStore } from "@/store/requestsStore";
 
 export function HistoryPage() {
   const reducedMotion = useReducedMotion() === true;
+  const requests = useRequestsStore((state) => state.requests);
+  const loadRequests = useRequestsStore((state) => state.loadRequests);
+  const historyItems = requests.filter((request) => request.status === "aprobado");
+
+  useEffect(() => {
+    void loadRequests().catch((error) => toast.error(readError(error)));
+  }, [loadRequests]);
 
   return (
     <MainContentContainer className="space-y-8 relative pb-20">
@@ -92,7 +101,7 @@ export function HistoryPage() {
                   </td>
                   <td className="px-6 py-6">
                     <div className="mx-auto w-fit rounded-lg border border-slate-100 bg-white px-2.5 py-1 font-mono text-[11px] font-bold tracking-widest text-slate-600 shadow-sm transition-all group-hover:border-indigo-200 group-hover:text-indigo-600">
-                      {p.code}
+                      {requestCode(p)}
                     </div>
                   </td>
                   <td className="px-6 py-6">
@@ -100,13 +109,13 @@ export function HistoryPage() {
                       <div className="grid h-6 w-6 place-items-center rounded-full bg-slate-100 text-[9px] font-bold text-slate-500 ring-1 ring-white">
                         <User className="h-3 w-3" />
                       </div>
-                      <span className="text-sm font-bold text-slate-700">{p.owner}</span>
+                      <span className="text-sm font-bold text-slate-700">{requestOwner(p)}</span>
                     </div>
                   </td>
                   <td className="px-6 py-6">
                     <div className="flex items-center gap-2 text-slate-500">
                       <Calendar className="h-3.5 w-3.5" />
-                      <span className="font-mono text-xs font-bold tabular-nums">{p.closedAt ?? p.updatedAt}</span>
+                      <span className="font-mono text-xs font-bold tabular-nums">{formatRequestDateLabel(p.createdAt)}</span>
                     </div>
                   </td>
                   <td className="px-6 py-6">
@@ -115,9 +124,9 @@ export function HistoryPage() {
                     </div>
                   </td>
                   <td className="px-8 py-6 text-right">
-                    {p.archiveUrl ? (
+                    {p.approvalLink ? (
                       <a
-                        href={p.archiveUrl}
+                        href={p.approvalLink}
                         className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-[11px] font-black uppercase tracking-widest text-white transition-all hover:bg-indigo-600 hover:shadow-lg hover:shadow-indigo-500/20 active:scale-95"
                         target="_blank"
                         rel="noreferrer"
@@ -137,4 +146,8 @@ export function HistoryPage() {
       </RevealOnScroll>
     </MainContentContainer>
   );
+}
+
+function readError(error: unknown) {
+  return error instanceof Error ? error.message : "No fue posible cargar el historico.";
 }
