@@ -113,12 +113,6 @@ export function DashboardPage() {
   return (
 
     <>
-
-      <div className="fixed top-30 left-1/2 z-50 -translate-x-1/2 transform rounded-full bg-gray-950/90 px-6 py-3 text-xs font-bold text-white backdrop-blur-xl shadow-xl ring-1 ring-white/10">
-        {userRole === "coordinador" ? "Panel de coordinación" : "Vista de GIF"}
-        <span className="ml-2 opacity-70">●</span>
-      </div>
-
       <DashboardEntryTransition
         active={showEntryTransition}
         profile={entryProfile}

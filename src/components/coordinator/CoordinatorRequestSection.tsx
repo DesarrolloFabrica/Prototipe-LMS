@@ -2,12 +2,13 @@ import type { RequestStatus } from "@/types";
 import { useRequestsStore } from "@/store/requestsStore";
 import { useState } from "react";
 export function CoordinatorRequestsSection() {
-
   const requests = useRequestsStore((state) => state.requests);
   const approveRequest = useRequestsStore((state) => state.approveRequest);
   const rejectRequest = useRequestsStore((state) => state.rejectRequest);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<RequestStatus | "todas">("todas");
+  const [statusFilter, setStatusFilter] = useState<RequestStatus | "todas">(
+    "todas",
+  );
   const [showFilters, setShowFilters] = useState(false);
   const [semesterFilter, setSemesterFilter] = useState("todos");
   const [programFilter, setProgramFilter] = useState("todos");
@@ -27,7 +28,6 @@ export function CoordinatorRequestsSection() {
   // approvalError: mensaje de validación cuando se confirma sin link.
   const [approvalError, setApprovalError] = useState("");
 
-
   // Aplica los tres filtros al mismo tiempo:
   // estado, semestre y programa.
   const filteredRequests = requests.filter((request) => {
@@ -43,16 +43,13 @@ export function CoordinatorRequestsSection() {
     return matchesStatus && matchesSemester && matchesProgram;
   });
 
-
-
   const statusStyles: Record<RequestStatus, string> = {
-    pendiente: "bg-amber-50 text-amber-700 border border-amber-200",
-    aprobada: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+    pendiente: "border border-cyan-200/80 bg-cyan-50/70 text-cyan-800",
+    aprobada: "border border-teal-200/80 bg-teal-50/70 text-teal-800",
     // "rechazada" significa que el coordinador pidió ajustes al GIF.
     // No es un rechazo definitivo: el GIF puede corregir y reenviar.
-    rechazada: "bg-orange-50 text-orange-700 border border-orange-200",
+    rechazada: "border border-rose-200/80 bg-rose-50/70 text-rose-800",
   };
-
 
   const statusLabel: Record<RequestStatus, string> = {
     pendiente: "Pendiente",
@@ -106,7 +103,9 @@ export function CoordinatorRequestsSection() {
   function confirmAdjustments(requestId: string) {
     if (adjustmentNotes.trim() === "") {
       // Muestra el mensaje de validación si el campo está vacío.
-      setAdjustmentError("Debes escribir una observación antes de solicitar ajustes.");
+      setAdjustmentError(
+        "Debes escribir una observación antes de solicitar ajustes.",
+      );
       return;
     }
     rejectRequest(requestId, adjustmentNotes.trim());
@@ -154,120 +153,101 @@ export function CoordinatorRequestsSection() {
             Solicitudes recibidas
           </h2>
 
-
-
           <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-slate-500">
-
-            Aquí aparecerán las solicitudes creadas por los GIF para que el coordinador pueda revisarlas, hacer seguimiento y gestionar su estado.
-
+            Aquí aparecerán las solicitudes creadas por los GIF para que el
+            coordinador pueda revisarlas, hacer seguimiento y gestionar su
+            estado.
           </p>
-
         </div>
         {/* Lista real de solicitudes compartidas por Zustand entre GIF y Coordinador */}
         <div className="space-y-5">
-          {filteredRequests.length === 0 ? (
-            <p className="text-sm text-slate-500">
-              No hay solicitudes para este filtro.
-            </p>
-          ) : (
-            <div className="grid gap-4">
+          <div className="grid gap-4">
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="text-left">
+                <h3 className="text-sm font-semibold text-slate-800">
+                  Filtros de solicitudes
+                </h3>
 
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <button
-                  type="button"
-                  onClick={() => setShowFilters((prev) => !prev)}
-                  className="flex w-full items-center justify-between"
-                >
-                  <div className="text-left">
-                    <h3 className="text-sm font-semibold text-slate-800">
-                      Filtros de solicitudes
-                    </h3>
-                    <p className="text-xs text-slate-500">
-                      Filtra por estado, semestre o programa.
-                    </p>
-                  </div>
-
-                  <svg
-                    className={`h-5 w-5 text-slate-500 transition-transform ${showFilters ? "rotate-180" : "rotate-0"
-                      }`}
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-
-                {showFilters && (
-                  <div className="mt-5 grid gap-4 md:grid-cols-3">
-                    <div>
-                      <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-400">
-                        Estado
-                      </label>
-
-                      <select
-                        value={statusFilter}
-                        onChange={(event) =>
-                          setStatusFilter(event.target.value as RequestStatus | "todas")
-                        }
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-slate-400 focus:bg-white"
-                      >
-                        <option value="todas">Todas</option>
-                        <option value="pendiente">Pendiente</option>
-                        <option value="aprobada">Aprobada</option>
-                        <option value="rechazada">Requiere ajustes</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-400">
-                        Semestre
-                      </label>
-
-                      <select
-                        value={semesterFilter}
-                        onChange={(event) => setSemesterFilter(event.target.value)}
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-slate-400 focus:bg-white"
-                      >
-                        <option value="todos">Todos</option>
-                        <option value="2024-1">2024-1</option>
-                        <option value="2024-2">2024-2</option>
-                        <option value="2025-1">2025-1</option>
-                        <option value="2025-2">2025-2</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-400">
-                        Programa
-                      </label>
-
-                      <select
-                        value={programFilter}
-                        onChange={(event) => setProgramFilter(event.target.value)}
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-slate-400 focus:bg-white"
-                      >
-                        <option value="todos">Todos</option>
-                        <option value="Administración de Empresas">
-                          Administración de Empresas
-                        </option>
-                        <option value="Ingeniería de Sistemas">
-                          Ingeniería de Sistemas
-                        </option>
-                        <option value="Diseño Gráfico">Diseño Gráfico</option>
-                      </select>
-                    </div>
-                  </div>
-                )}
+                <p className="text-xs text-slate-500">
+                  Filtra por estado, semestre o programa.
+                </p>
               </div>
+
+              <div className="mt-5 grid gap-4 md:grid-cols-3">
+                <div>
+                  <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-400">
+                    Estado
+                  </label>
+
+                  <select
+                    value={statusFilter}
+                    onChange={(event) =>
+                      setStatusFilter(event.target.value as RequestStatus | "todas")
+                    }
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-slate-400 focus:bg-white"
+                  >
+                    <option value="todas">Todas</option>
+                    <option value="pendiente">Pendiente</option>
+                    <option value="aprobada">Aprobada</option>
+                    <option value="rechazada">Requiere ajustes</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-400">
+                    Semestre
+                  </label>
+
+                  <select
+                    value={semesterFilter}
+                    onChange={(event) => setSemesterFilter(event.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-slate-400 focus:bg-white"
+                  >
+                    <option value="todos">Todos</option>
+                    <option value="2024-1">2024-1</option>
+                    <option value="2024-2">2024-2</option>
+                    <option value="2025-1">2025-1</option>
+                    <option value="2025-2">2025-2</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-400">
+                    Programa
+                  </label>
+
+                  <select
+                    value={programFilter}
+                    onChange={(event) => setProgramFilter(event.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-slate-400 focus:bg-white"
+                  >
+                    <option value="todos">Todos</option>
+                    <option value="Administración de Empresas">
+                      Administración de Empresas
+                    </option>
+                    <option value="Ingeniería de Sistemas">
+                      Ingeniería de Sistemas
+                    </option>
+                    <option value="Diseño Gráfico">Diseño Gráfico</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            {filteredRequests.length === 0 ? (
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                <p className="text-center text-sm text-slate-500 italic tracking-wide">
+                  Aún no se han registrado solicitudes.
+                </p>
+              </div>
+            ) : (
               <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
                 <div className="mb-6">
                   <h2 className="text-lg font-semibold text-slate-800">
                     Solicitudes recibidas
                   </h2>
                   <p className="text-sm text-slate-500">
-                    Revisa, valida y gestiona las solicitudes enviadas por los GIF.
+                    Revisa, valida y gestiona las solicitudes enviadas por los
+                    GIF.
                   </p>
                 </div>
                 {filteredRequests.map((request) => {
@@ -278,56 +258,64 @@ export function CoordinatorRequestsSection() {
                       onClick={() => toggleExpand(request.id)}
                       className={`
                        relative cursor-pointer overflow-hidden
-                       rounded-2xl border border-slate-200 bg-white p-5
-                       shadow-sm
+                       rounded-[2rem] border border-white/40 bg-white/60 p-6
+                       backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.06)]
                    
-                       transition-all duration-200 ease-out
-                       hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-lg
+                       transition-all duration-300 ease-out
+                       hover:-translate-y-1 hover:border-white/60 hover:shadow-[0_20px_40px_rgba(0,0,0,0.08)]
                    
-                       before:absolute before:left-0 before:top-0 before:h-full before:w-1
-                       before:rounded-l-2xl before:transition-all before:duration-200
-                       hover:before:w-1.5
+                       before:absolute before:left-0 before:top-0 before:h-full before:w-1.5
+                       before:transition-all before:duration-300
+                       hover:before:w-2
                    
-                       ${request.status === "pendiente" && "before:bg-amber-400"}
-                       ${request.status === "rechazada" && "before:bg-orange-500"}
-                       ${request.status === "aprobada" && "before:bg-emerald-500"}
+                       ${request.status === "pendiente" && "before:bg-gradient-to-b before:from-cyan-400 before:to-blue-500"}
+                       ${request.status === "rechazada" && "before:bg-gradient-to-b before:from-rose-400 before:to-red-500"}
+                       ${request.status === "aprobada" && "before:bg-gradient-to-b before:from-teal-400 before:to-emerald-500"}
                      `}
                     >
+                      {/* Brillo decorativo de fondo */}
+                      <div className={`absolute -right-20 -top-20 h-40 w-40 rounded-full blur-[80px] opacity-20 pointer-events-none transition-colors duration-500 ${
+                        request.status === "pendiente" ? "bg-cyan-400" :
+                        request.status === "rechazada" ? "bg-rose-400" : "bg-teal-400"
+                      }`} />
+
                       {/* 🔹 HEADER RESUMIDO */}
-                      {/* Header principal de la tarjeta */}
-                      <div className="flex items-start justify-between gap-4">
+                      <div className="relative z-10 flex items-start justify-between gap-4">
                         <div className="min-w-0">
-                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400/80 mb-1">
                             Solicitud LMS
                           </p>
 
-                          <h3 className="mt-1 text-lg font-semibold leading-tight text-slate-900">
+                          <h3 className="text-xl font-extrabold leading-tight text-slate-900 tracking-tight">
                             {request.subject}
                           </h3>
                         </div>
 
                         <span
-                          className={`shrink-0 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${statusStyles[request.status]}`}
+                          className={`shrink-0 inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-[11px] font-bold uppercase tracking-wider shadow-sm ring-1 ring-white/50 backdrop-blur-md ${statusStyles[request.status]}`}
                         >
-                          <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                          <span className={`h-2 w-2 rounded-full animate-pulse ${
+                            request.status === "pendiente" ? "bg-cyan-500" :
+                            request.status === "rechazada" ? "bg-rose-500" : "bg-teal-500"
+                          }`} />
                           {statusLabel[request.status]}
                         </span>
                       </div>
 
                       {/* Metadata + acción */}
-                      <div className="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
-                          <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-600">
+                      <div className="relative z-10 mt-6 flex flex-col gap-4 border-t border-slate-200/40 pt-5 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex flex-wrap items-center gap-3 text-[13px] font-medium text-slate-500/90">
+                          <span className="rounded-xl bg-slate-100/80 px-3.5 py-1.5 ring-1 ring-slate-200/50">
                             {request.level}
                           </span>
 
-                          <span className="text-slate-300">•</span>
+                          <span className="text-slate-300">/</span>
 
-                          <span>{request.program}</span>
+                          <span className="tracking-tight">{request.program}</span>
 
-                          <span className="text-slate-300">•</span>
+                          <span className="text-slate-300">/</span>
 
-                          <span>{request.semester}</span>
+                          <span className="font-bold text-slate-400">{request.semester}</span>
                         </div>
 
                         <button
@@ -336,242 +324,254 @@ export function CoordinatorRequestsSection() {
                             event.stopPropagation();
                             toggleExpand(request.id);
                           }}
-                          className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 hover:shadow-md active:scale-95"
+                          className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/80 bg-white/50 px-5 py-2.5 text-xs font-bold text-slate-700 shadow-sm backdrop-blur-sm transition-all hover:bg-white/80 hover:shadow-md active:scale-95"
                         >
-                          <span>{isExpanded ? "Ocultar detalles" : "Ver detalles"}</span>
+                          <span>
+                            {isExpanded ? "Ocultar detalles" : "Ver detalles"}
+                          </span>
 
                           <svg
-                            className={`h-4 w-4 transition-transform duration-200 ${isExpanded ? "rotate-180" : "rotate-0"
+                            className={`h-4 w-4 transition-transform duration-300 ${isExpanded ? "rotate-180" : "rotate-0"
                               }`}
                             fill="none"
                             stroke="currentColor"
-                            strokeWidth="2"
+                            strokeWidth="2.5"
                             viewBox="0 0 24 24"
                           >
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M19 9l-7 7-7-7"
+                            />
                           </svg>
                         </button>
                       </div>
+
                       <div
                         className={`
-                        overflow-hidden transition-all duration-300 ease-out
-                        ${isExpanded ? "mt-5 max-h-[1000px] opacity-100" : "mt-0 max-h-0 opacity-0"}
+                        relative z-10 overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]
+                        ${isExpanded ? "mt-6 max-h-[1200px] opacity-100" : "mt-0 max-h-0 opacity-0"}
                       `}
                       >
-                        <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-5">
-                          <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/80 p-5">
-                        <div className="grid gap-3 md:grid-cols-2">
-                          <div className="rounded-xl bg-white p-4 ring-1 ring-slate-200">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                              Drive
-                            </p>
+                        <div className="rounded-[1.5rem] border border-white/60 bg-slate-50/40 p-1 shadow-inner">
+                          <div className="rounded-[1.25rem] border border-slate-200/50 bg-white/40 p-6 backdrop-blur-md">
+                            <div className="grid gap-4 md:grid-cols-2">
+                              <div className="group rounded-[1.25rem] bg-white/60 p-5 ring-1 ring-slate-200/40 transition-all hover:bg-white/80 hover:shadow-lg hover:shadow-blue-500/5">
+                                <div className="flex items-center justify-between mb-3">
+                                  <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">
+                                    Drive Source
+                                  </p>
+                                  <div className="h-2 w-2 rounded-full bg-blue-400/40" />
+                                </div>
 
-                            <a
-                              href={request.source}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="mt-2 inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
-                            >
-                              Ver enlace
-                              <span aria-hidden="true">↗</span>
-                            </a>
-                          </div>
+                                <a
+                                  href={request.source}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-blue-500/25 transition-all hover:scale-[1.02] hover:shadow-blue-500/40 active:scale-95"
+                                >
+                                  Ver material en Drive
+                                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                  </svg>
+                                </a>
+                              </div>
 
-                          <div className="rounded-xl bg-white p-4 ring-1 ring-slate-200">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                              Creación
-                            </p>
+                              <div className="rounded-[1.25rem] bg-white/60 p-5 ring-1 ring-slate-200/40 transition-all hover:bg-white/80">
+                                <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">
+                                  Información de Creación
+                                </p>
 
-                            <p className="mt-2 text-sm font-medium text-slate-700">
-                              {request.createdAt}
-                            </p>
+                                <div className="flex items-center gap-4">
+                                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 font-bold text-slate-500 ring-1 ring-slate-200">
+                                    {request.createdByName?.charAt(0) || "G"}
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-bold text-slate-800">
+                                      {request.createdAt}
+                                    </p>
+                                    <p className="text-[11px] font-medium text-slate-500">
+                                      {request.createdByName || "GIF User"} · {request.createdByRole}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
 
-                            <p className="mt-1 text-xs text-slate-500">
-                              {request.createdByName} · {request.createdByRole}
-                            </p>
-                          </div>
+                              <div className="rounded-[1.25rem] bg-white/60 p-5 ring-1 ring-slate-200/40 md:col-span-2 transition-all hover:bg-white/80">
+                                <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-3">
+                                  Resumen de la Solicitud
+                                </p>
 
-                          <div className="rounded-xl bg-white p-4 ring-1 ring-slate-200 md:col-span-2">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                              Descripción
-                            </p>
+                                <p className="text-[14px] leading-relaxed text-slate-600 font-medium italic">
+                                  "{request.summary}"
+                                </p>
+                              </div>
 
-                            <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                              {request.summary}
-                            </p>
-                          </div>
-
-                          {/* Observaciones del coordinador: se muestran solo cuando existe adjustmentNotes,
-                                es decir, cuando el coordinador ya confirmó un "Solicitar ajustes" previo. */}
-                          {request.adjustmentNotes && (
-                            <div className="rounded-xl border border-orange-200 bg-orange-50 p-4 md:col-span-2">
-                              <p className="text-xs font-semibold uppercase tracking-wide text-orange-500">
-                                Observaciones solicitadas
-                              </p>
-                              <p className="mt-2 text-sm leading-relaxed text-orange-800">
-                                {request.adjustmentNotes}
-                              </p>
+                              {request.adjustmentNotes && (
+                                <div className="rounded-[1.25rem] border border-rose-200/50 bg-rose-50/50 p-5 md:col-span-2 ring-1 ring-rose-500/10">
+                                  <div className="flex items-center gap-2 mb-3">
+                                    <div className="h-1.5 w-1.5 rounded-full bg-rose-500" />
+                                    <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-rose-700">
+                                      Observaciones solicitadas
+                                    </p>
+                                  </div>
+                                  <p className="text-sm leading-relaxed text-rose-900/80 font-medium">
+                                    {request.adjustmentNotes}
+                                  </p>
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </div>
 
-                        <div className="mt-5 flex flex-wrap justify-end gap-2 border-t border-slate-200 pt-4">
-                          <button
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              openApprovalBox(request.id);
-                            }}
-                            className="rounded-full bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"
-                          >
-                            Aprobar
-                          </button>
-
-                          {/* Solicitar ajustes: abre el chatbox obligatorio.
-                                No cambia el estado hasta que el coordinador confirme con observaciones. */}
-                          <button
-                            onClick={(event) => {
-                              event.stopPropagation(); openAdjustmentBox(request.id)
-                            }}
-                            className="rounded-full bg-orange-50 px-4 py-2 text-sm font-semibold text-orange-700 transition hover:bg-orange-100"
-                          >
-                            Solicitar ajustes
-                          </button>
-                        </div>
-
-                        {/* --- CHATBOX DE AJUSTES ---
-                              Se muestra solo cuando el coordinador hace clic en "Solicitar ajustes".
-                              El coordinador debe escribir observaciones antes de confirmar. */}
-                        {adjustmentBoxId === request.id && (
-                          <div
-                            className="mt-4 rounded-2xl border border-orange-200 bg-orange-50/60 p-4"
-                            onClick={(event) => event.stopPropagation()}
-                          >
-                            <p className="mb-2 text-sm font-semibold text-orange-800">
-                              Observaciones para el GIF
-                            </p>
-                            <p className="mb-3 text-xs text-orange-600">
-                              Explica qué debe corregir el GIF. Este texto será visible en su panel.
-                            </p>
-
-                            {/* Textarea de observaciones */}
-                            <textarea
-                              value={adjustmentNotes}
-                              onChange={(e) => {
-                                setAdjustmentNotes(e.target.value);
-                                // Limpia el error en cuanto el coordinador empieza a escribir.
-                                if (adjustmentError) setAdjustmentError("");
-                              }}
-                              rows={4}
-                              placeholder="Describe las correcciones necesarias..."
-                              className="w-full resize-none rounded-xl border border-orange-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-300/40"
-                            />
-
-                            {/* Mensaje de validación: aparece solo si se intenta confirmar sin texto */}
-                            {adjustmentError && (
-                              <p className="mt-2 text-xs font-medium text-red-600">
-                                {adjustmentError}
-                              </p>
-                            )}
-
-                            {/* Botones del chatbox */}
-                            <div className="mt-3 flex justify-end gap-2">
-                              {/* Cancelar: cierra el chatbox sin cambiar el estado */}
+                            <div className="mt-8 flex flex-wrap justify-end gap-3 border-t border-slate-200/60 pt-6">
                               <button
-                                type="button"
-                                onClick={cancelAdjustmentBox}
-                                className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
-                              >
-                                Cancelar
-                              </button>
-
-                              {/* Confirmar: valida el textarea y llama a rejectRequest */}
-                              <button
-                                type="button"
-                                onClick={() => confirmAdjustments(request.id)}
-                                className="rounded-full bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-700 active:scale-95"
-                              >
-                                Confirmar ajustes
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                        {/* --- PANEL DE APROBACIÓN ---
-                              Se muestra al hacer clic en "Aprobar".
-                              Requiere link antes de confirmar. */}
-                        {approvalBoxId === request.id && (
-                          <div
-                            className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4"
-                            onClick={(event) => event.stopPropagation()}
-                          >
-                            <p className="mb-2 text-sm font-semibold text-emerald-800">
-                              Confirmar aprobación
-                            </p>
-                            <p className="mb-3 text-xs text-emerald-700">
-                              Pega el link final para aprobar esta solicitud.
-                            </p>
-
-                            <input
-                              type="url"
-                              value={approvalLink}
-                              onChange={(event) => {
-                                setApprovalLink(event.target.value);
-                                if (approvalError) setApprovalError("");
-                              }}
-                              placeholder="https://..."
-                              className="w-full rounded-xl border border-emerald-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-300/40"
-                              required
-                            />
-
-                            {approvalError && (
-                              <p className="mt-2 text-xs font-medium text-red-600">
-                                {approvalError}
-                              </p>
-                            )}
-
-                            <div className="mt-3 flex justify-end gap-2">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setApprovalBoxId(null);
-                                  setApprovalLink("");
-                                  setApprovalError("");
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  openApprovalBox(request.id);
                                 }}
-                                className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+                                className="group relative overflow-hidden rounded-2xl bg-teal-50 px-6 py-3 text-sm font-bold text-teal-800 transition-all hover:bg-teal-500 hover:text-white hover:shadow-lg hover:shadow-teal-500/20 active:scale-95"
                               >
-                                Cancelar
+                                <span className="relative z-10">Aprobar Solicitud</span>
+                                <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-teal-400 to-emerald-500 transition-transform duration-300 group-hover:translate-x-0" />
                               </button>
+
                               <button
-                                type="button"
-                                onClick={() => confirmApproval(request.id)}
-                                className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 active:scale-95"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  openAdjustmentBox(request.id);
+                                }}
+                                className="group relative overflow-hidden rounded-2xl bg-rose-50 px-6 py-3 text-sm font-bold text-rose-800 transition-all hover:bg-rose-500 hover:text-white hover:shadow-lg hover:shadow-rose-500/20 active:scale-95"
                               >
-                                Confirmar aprobación
+                                <span className="relative z-10">Solicitar ajustes</span>
+                                <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-rose-400 to-red-500 transition-transform duration-300 group-hover:translate-x-0" />
                               </button>
                             </div>
+
+                            {adjustmentBoxId === request.id && (
+                              <div
+                                className="mt-6 rounded-[1.5rem] border border-rose-200/50 bg-white/80 p-6 shadow-xl shadow-rose-500/5"
+                                onClick={(event) => event.stopPropagation()}
+                              >
+                                <div className="flex items-center gap-2 mb-4">
+                                  <div className="h-4 w-1 rounded-full bg-rose-500" />
+                                  <p className="text-sm font-bold text-rose-900 tracking-tight">
+                                    Panel de Observaciones
+                                  </p>
+                                </div>
+                                <p className="mb-4 text-xs font-medium text-slate-500 leading-relaxed">
+                                  Explica detalladamente qué debe corregir el GIF. Estas observaciones serán visibles instantáneamente en su panel de control.
+                                </p>
+
+                                <textarea
+                                  value={adjustmentNotes}
+                                  onChange={(e) => {
+                                    setAdjustmentNotes(e.target.value);
+                                    if (adjustmentError) setAdjustmentError("");
+                                  }}
+                                  rows={4}
+                                  placeholder="Escribe aquí las correcciones necesarias..."
+                                  className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50/50 px-5 py-4 text-sm text-slate-700 outline-none transition-all focus:border-rose-400 focus:bg-white focus:ring-4 focus:ring-rose-500/10"
+                                />
+
+                                {adjustmentError && (
+                                  <p className="mt-3 text-xs font-bold text-rose-600 flex items-center gap-1.5">
+                                    <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                    </svg>
+                                    {adjustmentError}
+                                  </p>
+                                )}
+
+                                <div className="mt-5 flex justify-end gap-3">
+                                  <button
+                                    type="button"
+                                    onClick={cancelAdjustmentBox}
+                                    className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-500 transition-all hover:bg-slate-50 hover:text-slate-700"
+                                  >
+                                    Descartar
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      confirmAdjustments(request.id)
+                                    }
+                                    className="rounded-xl bg-slate-900 px-6 py-2.5 text-xs font-bold text-white transition-all hover:bg-black active:scale-95 shadow-lg shadow-black/10"
+                                  >
+                                    Confirmar y Notificar
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+
+                            {approvalBoxId === request.id && (
+                              <div
+                                className="mt-6 rounded-[1.5rem] border border-teal-200/50 bg-white/80 p-6 shadow-xl shadow-teal-500/5"
+                                onClick={(event) => event.stopPropagation()}
+                              >
+                                <div className="flex items-center gap-2 mb-4">
+                                  <div className="h-4 w-1 rounded-full bg-teal-500" />
+                                  <p className="text-sm font-bold text-teal-900 tracking-tight">
+                                    Aprobación Final
+                                  </p>
+                                </div>
+                                <p className="mb-4 text-xs font-medium text-slate-500 leading-relaxed">
+                                  Para completar la aprobación, es obligatorio proporcionar el enlace final donde se ha desplegado o virtualizado el material.
+                                </p>
+
+                                <input
+                                  type="url"
+                                  value={approvalLink}
+                                  onChange={(event) => {
+                                    setApprovalLink(event.target.value);
+                                    if (approvalError) setApprovalError("");
+                                  }}
+                                  placeholder="Pega el link final aquí (https://...)"
+                                  className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-5 py-4 text-sm text-slate-700 outline-none transition-all focus:border-teal-400 focus:bg-white focus:ring-4 focus:ring-teal-500/10"
+                                  required
+                                />
+
+                                {approvalError && (
+                                  <p className="mt-3 text-xs font-bold text-rose-600 flex items-center gap-1.5">
+                                    <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                    </svg>
+                                    {approvalError}
+                                  </p>
+                                )}
+
+                                <div className="mt-5 flex justify-end gap-3">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setApprovalBoxId(null);
+                                      setApprovalLink("");
+                                      setApprovalError("");
+                                    }}
+                                    className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-500 transition-all hover:bg-slate-50 hover:text-slate-700"
+                                  >
+                                    Cancelar
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => confirmApproval(request.id)}
+                                    className="rounded-xl bg-teal-600 px-6 py-2.5 text-xs font-bold text-white transition-all hover:bg-teal-700 active:scale-95 shadow-lg shadow-teal-500/20"
+                                  >
+                                    Confirmar Aprobación
+                                  </button>
+                                </div>
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
                         </div>
                       </div>
-                      
-                    
                     </article>
-
                   );
-
                 })}
               </div>
-
-            </div>
-
-          )}
-
+            )}
+          </div>
         </div>
-
       </div>
-
     </section>
-
   );
-
 }

@@ -89,13 +89,13 @@ export const DashboardHero = forwardRef<HTMLElement, DashboardHeroProps>(functio
   );
 
   const goFlow = () => {
-  if (onPrimaryAction) {
-    onPrimaryAction();
-    return;
-  }
-  setDashboardNavScrollActiveTo(DASHBOARD_SCROLL_TAB_IDS.procesos);
-  scrollToDashboardSection(DASHBOARD_SECTION_IDS.flow);
-};
+    if (onPrimaryAction) {
+      onPrimaryAction();
+      return;
+    }
+    setDashboardNavScrollActiveTo(DASHBOARD_SCROLL_TAB_IDS.procesos);
+    scrollToDashboardSection(DASHBOARD_SECTION_IDS.flow);
+  };
 
   const goNav = () => {
     setDashboardNavScrollActiveTo(DASHBOARD_SCROLL_TAB_IDS.procesos);
@@ -146,9 +146,9 @@ export const DashboardHero = forwardRef<HTMLElement, DashboardHeroProps>(functio
           }}
           aria-hidden
         />
-        <div className="pointer-events-none absolute inset-0 z-1 bg-slate-950/40 backdrop-blur-[0.5px]" aria-hidden />
+        <div className="pointer-events-none absolute inset-0 z-1 bg-slate-950/28 backdrop-blur-[0.5px]" aria-hidden />
         <div
-          className="pointer-events-none absolute inset-0 z-1 bg-linear-to-t from-slate-950 via-transparent to-white/5"
+          className="pointer-events-none absolute inset-0 z-1 bg-linear-to-t from-slate-950/80 via-slate-950/20 to-white/5"
           aria-hidden
         />
 
@@ -168,7 +168,7 @@ export const DashboardHero = forwardRef<HTMLElement, DashboardHeroProps>(functio
                   variants={itemVariant}
                   className="mb-6 bg-linear-to-br from-white via-slate-200 to-blue-400 bg-clip-text text-4xl font-black leading-[1.05] tracking-tight text-transparent drop-shadow-lg sm:text-6xl md:text-[4rem]"
                 >
-                 Gestiona el checkout de <br className="hidden sm:block" />
+                  Gestiona el checkout de <br className="hidden sm:block" />
                   virtualización sin fricción
                 </motion.h1>
 
@@ -184,19 +184,6 @@ export const DashboardHero = forwardRef<HTMLElement, DashboardHeroProps>(functio
                   {statsLine.toUpperCase()}
                 </motion.div>
 
-                <motion.div variants={itemVariant} className="flex flex-wrap justify-center gap-4 lg:justify-start">
-                  <motion.button
-                    type="button"
-                    onClick={goFlow}
-                    className="group relative flex h-12 items-center justify-center gap-3 overflow-hidden rounded-2xl bg-blue-600 px-8 text-[14px] font-bold text-white shadow-2xl transition-all"
-                    whileHover={{ scale: 1.05, y: -2 }}
-                    whileTap={scaleTap}
-                  >
-                    <span className="relative z-10">Comenzar flujo</span>
-                    <GitBranch className="relative z-10 h-4 w-4 transition-transform group-hover:rotate-12" />
-                    <div className="absolute inset-0 -translate-x-full bg-linear-to-r from-transparent via-white/20 to-transparent transition-transform duration-500 group-hover:translate-x-full" />
-                  </motion.button>
-                </motion.div>
               </motion.div>
             </div>
 
@@ -218,9 +205,25 @@ export const DashboardHero = forwardRef<HTMLElement, DashboardHeroProps>(functio
               </motion.div>
             </div>
           </div>
+          <motion.div
+            variants={itemVariant}
+            className="pointer-events-none absolute bottom-35 left-1/2 z-20 -translate-x-1/2"
+          >
+            <motion.button
+              type="button"
+              onClick={goFlow}
+              className="pointer-events-auto group relative flex h-12 items-center justify-center gap-3 overflow-hidden rounded-2xl bg-blue-600 px-10 text-[14px] font-bold text-white shadow-2xl transition-all"
+              whileHover={{ scale: 1.05, y: -2 }}
+              whileTap={scaleTap}
+            >
+              <span className="relative z-10">Comenzar flujo</span>
+              <GitBranch className="relative z-10 h-4 w-4 transition-transform group-hover:rotate-12" />
+              <div className="absolute inset-0 -translate-x-full bg-linear-to-r from-transparent via-white/20 to-transparent transition-transform duration-500 group-hover:translate-x-full" />
+            </motion.button>
+          </motion.div>
         </div>
 
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-14 h-48 bg-linear-to-t from-slate-950 via-slate-950/80 to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-14 h-48 bg-linear-to-t from-slate-950/75 via-slate-950/45 to-transparent" />
 
       </motion.section>
     </div>

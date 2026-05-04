@@ -81,6 +81,19 @@ export const useRequestsStore = create<RequestsState>()(
       name: "carga-lms-requests",
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({ requests: state.requests }),
+      // Forzamos una limpieza única de datos persistidos para iniciar pruebas desde cero.
+      // La funcionalidad de guardado se mantiene: después de esta migración, se persisten
+      // nuevamente solo las solicitudes creadas durante las pruebas actuales.
+      version: 2,
+      migrate: (persistedState, version) => {
+        if (!persistedState || typeof persistedState !== "object") {
+          return { requests: [] };
+        }
+        if (version < 2) {
+          return { requests: [] };
+        }
+        return persistedState as { requests: LmsRequest[] };
+      },
       // Migración automática: normaliza datos persistidos en localStorage.
       // Si existen solicitudes con el estado antiguo "en_revision", se convierten
       // a "pendiente" para mantener consistencia con el sistema de estados actual.
