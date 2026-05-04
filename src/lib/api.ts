@@ -13,7 +13,11 @@ import type {
   UpdateSubjectStatusPayload,
 } from "@/types";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000/api";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+if (!API_BASE_URL) {
+  throw new Error("Missing required environment variable: VITE_API_BASE_URL");
+}
 
 type RequestOptions = Omit<RequestInit, "body"> & {
   body?: unknown;
