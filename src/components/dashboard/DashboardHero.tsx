@@ -247,7 +247,7 @@ export const DashboardHero = forwardRef<HTMLElement, DashboardHeroProps>(functio
               >
                 <div className="absolute inset-0 bg-blue-500/10 blur-[100px] rounded-full" />
                 <DotLottieReact
-                  src="/videos/tech coding upload.lottie"
+                  src="/videos/Hero.lottie"
                   loop
                   autoplay
                   className="h-full w-full object-contain drop-shadow-[0_0_50px_rgba(59,130,246,0.4)]"

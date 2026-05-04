@@ -33,7 +33,7 @@ export function BootSequence({ substateIndex, reducedMotion }: BootSequenceProps
             className="mb-4 flex h-24 w-24 items-center justify-center overflow-hidden"
           >
             <DotLottieReact
-              src="/videos/Seal.lottie"
+              src="/videos/Roboseal.lottie"
               loop
               autoplay
               className="h-full w-full object-contain"
