@@ -1,18 +1,28 @@
+import { useEffect } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { ChevronRight, ListFilter, Activity } from "lucide-react";
+import { toast } from "sonner";
 import { RevealOnScroll } from "@/components/common/RevealOnScroll";
 import { MainContentContainer } from "@/components/layout/MainContentContainer";
 import { FilterBar } from "@/components/shared/FilterBar";
 import { StatusPill } from "@/components/shared/StatusPill";
 import { PRIORITY_STYLES } from "@/lib/constants";
-import { reviewQueue } from "@/data/reviewQueue";
+import { formatRequestDateLabel, requestCode, requestOwner, requestPriority } from "@/lib/requestDerived";
+import { useRequestsStore } from "@/store/requestsStore";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import { cn } from "@/lib/cn";
 
 export function ReviewPage() {
+  const requests = useRequestsStore((state) => state.requests);
+  const loadRequests = useRequestsStore((state) => state.loadRequests);
+  const reviewQueue = requests.filter((request) => request.status !== "aprobado");
   const pending = reviewQueue.length;
   const reducedMotion = useReducedMotion() === true;
+
+  useEffect(() => {
+    void loadRequests().catch((error) => toast.error(readError(error)));
+  }, [loadRequests]);
 
   return (
     <MainContentContainer className="space-y-6">
@@ -98,7 +108,8 @@ export function ReviewPage() {
             </thead>
             <tbody className="divide-y divide-slate-50">
               {reviewQueue.map((p, i) => {
-                const prio = PRIORITY_STYLES[p.priority] ?? "bg-slate-100 text-slate-700";
+                const priority = requestPriority(p);
+                const prio = PRIORITY_STYLES[priority] ?? "bg-slate-100 text-slate-700";
                 return (
                   <motion.tr
                     key={p.id}
@@ -122,7 +133,7 @@ export function ReviewPage() {
                     </td>
                     <td className="px-4 py-5">
                       <span className="font-mono text-[11px] font-bold text-slate-400 bg-slate-100/50 px-2 py-1 rounded-md">
-                        {p.code}
+                        {requestCode(p)}
                       </span>
                     </td>
                     <td className="px-4 py-5">
@@ -133,19 +144,19 @@ export function ReviewPage() {
                         "inline-flex items-center rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest",
                         prio
                       )}>
-                        {p.priority}
+                        {priority}
                       </span>
                     </td>
                     <td className="px-4 py-5">
                       <div className="flex items-center gap-2">
                         <div className="h-7 w-7 rounded-full bg-linear-to-br from-slate-100 to-slate-200 border border-white flex items-center justify-center text-[10px] font-bold text-slate-600">
-                          {p.owner.split(" ").map(n => n[0]).join("")}
+                          {requestOwner(p).split(" ").map(n => n[0]).join("")}
                         </div>
-                        <span className="font-bold text-slate-700">{p.owner}</span>
+                        <span className="font-bold text-slate-700">{requestOwner(p)}</span>
                       </div>
                     </td>
                     <td className="px-4 py-5 text-xs font-bold text-slate-400">
-                      {p.timeLabel ?? p.updatedAt}
+                      {formatRequestDateLabel(p.createdAt)}
                     </td>
                     <td className="px-8 py-5 text-right">
                       <Link
@@ -165,4 +176,8 @@ export function ReviewPage() {
       </RevealOnScroll>
     </MainContentContainer>
   );
+}
+
+function readError(error: unknown) {
+  return error instanceof Error ? error.message : "No fue posible cargar la cola de revision.";
 }

@@ -1,21 +1,25 @@
+import { useEffect } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { Calendar, ChevronRight, UserRound, LayoutPanelLeft, Sparkles, ShieldCheck } from "lucide-react";
 import { Link } from "react-router-dom";
+import { toast } from "sonner";
 import { RevealOnScroll } from "@/components/common/RevealOnScroll";
 import { MainContentContainer } from "@/components/layout/MainContentContainer";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { StatusPill } from "@/components/shared/StatusPill";
 import { motionEase } from "@/lib/animations";
 import { PIPELINE_COLUMN_ACCENT, PRIORITY_STYLES, REQUEST_STATUS_LABELS } from "@/lib/constants";
-import { processes } from "@/data/mockProcesses";
-import type { Status } from "@/types";
+import { formatRequestDateLabel, requestCode, requestOwner, requestPriority } from "@/lib/requestDerived";
+import { useRequestsStore } from "@/store/requestsStore";
+import type { LmsRequest, Status } from "@/types";
 import { cn } from "@/lib/cn";
 
 const columns: Status[] = ["pendiente", "requiere_ajustes", "aprobado"];
 
 /** Tarjeta de Pipeline con diseño de módulo técnico ligero */
-function PipelineCard({ item }: { item: (typeof processes)[0] }) {
-  const prio = PRIORITY_STYLES[item.priority] ?? "bg-slate-100 text-slate-700";
+function PipelineCard({ item }: { item: LmsRequest }) {
+  const priority = requestPriority(item);
+  const prio = PRIORITY_STYLES[priority] ?? "bg-slate-100 text-slate-700";
 
   return (
     <motion.div
@@ -36,7 +40,7 @@ function PipelineCard({ item }: { item: (typeof processes)[0] }) {
               {item.subject}
             </p>
             <div className="mt-1.5 flex items-center gap-2">
-              <span className="font-mono text-[9px] font-black uppercase tracking-widest text-slate-400/80">UNIT::{item.code}</span>
+              <span className="font-mono text-[9px] font-black uppercase tracking-widest text-slate-400/80">UNIT::{requestCode(item)}</span>
               <div className="h-1 w-1 rounded-full bg-blue-100" />
             </div>
           </div>
@@ -45,15 +49,15 @@ function PipelineCard({ item }: { item: (typeof processes)[0] }) {
 
         <div className="mt-5 flex flex-wrap items-center gap-2.5">
           <span className={cn("rounded-lg px-2 py-0.5 text-[9px] font-black uppercase tracking-widest ring-1 ring-inset shadow-xs", prio)}>
-            {item.priority}
+            {priority}
           </span >
           <div className="flex items-center gap-1.5 text-[10.5px] font-bold text-slate-400/90">
             <UserRound className="h-3 w-3" />
-            <span className="truncate max-w-[80px]">{item.owner}</span>
+            <span className="truncate max-w-[80px]">{requestOwner(item)}</span>
           </div>
           <div className="flex items-center gap-1.5 text-[10.5px] font-bold text-slate-400/90">
             <Calendar className="h-3 w-3" />
-            <span>{item.timeLabel ?? item.updatedAt}</span>
+            <span>{formatRequestDateLabel(item.createdAt)}</span>
           </div>
         </div>
 
@@ -77,6 +81,12 @@ function PipelineCard({ item }: { item: (typeof processes)[0] }) {
 
 export function PipelinePage() {
   const reducedMotion = useReducedMotion() === true;
+  const requests = useRequestsStore((state) => state.requests);
+  const loadRequests = useRequestsStore((state) => state.loadRequests);
+
+  useEffect(() => {
+    void loadRequests().catch((error) => toast.error(readError(error)));
+  }, [loadRequests]);
 
   return (
     <MainContentContainer className="relative space-y-10 py-8 lg:py-12">
@@ -98,7 +108,7 @@ export function PipelinePage() {
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
         {columns.map((column, colIndex) => {
-          const items = processes.filter((p) => p.status === column);
+          const items = requests.filter((p) => p.status === column);
           const accentClass = PIPELINE_COLUMN_ACCENT[column] ?? "from-slate-400 to-slate-300";
 
           return (
@@ -164,4 +174,8 @@ export function PipelinePage() {
       </div>
     </MainContentContainer>
   );
+}
+
+function readError(error: unknown) {
+  return error instanceof Error ? error.message : "No fue posible cargar el pipeline.";
 }

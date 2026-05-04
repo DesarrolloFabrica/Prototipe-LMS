@@ -117,6 +117,27 @@ export interface ApiSubject {
   comments?: ApiComment[];
 }
 
+export interface ApiSubjectMetrics {
+  total: number;
+  active: number;
+  pending: number;
+  requiresAdjustments: number;
+  approved: number;
+  today: number;
+  byStatus: Record<RequestStatus, number>;
+}
+
+export interface ApiActivityEntry {
+  id: string;
+  type: string;
+  subjectId: number;
+  subjectName: string;
+  text: string;
+  actor: string;
+  linkedStatus?: RequestStatus;
+  createdAt: string;
+}
+
 export interface AuthSession {
   tokenType: "Cookie";
   expiresIn: string;

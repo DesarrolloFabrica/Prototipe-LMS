@@ -1,7 +1,8 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { materiasApi } from "@/lib/api";
-import type { AcademicLevel, ApiSubject, ContentTypeCode, LmsRequest, UserRole } from "@/types";
+import { subjectToRequest } from "@/lib/requestDerived";
+import type { AcademicLevel, ApiSubject, ContentTypeCode, LmsRequest } from "@/types";
 
 interface CreateRequestInput {
   subject: string;
@@ -18,6 +19,7 @@ interface RequestsState {
   requests: LmsRequest[];
   isLoading: boolean;
   error: string | null;
+  loadRequests: () => Promise<void>;
   loadMyRequests: () => Promise<void>;
   loadCoordinatorRequests: () => Promise<void>;
   createRequest: (input: CreateRequestInput) => Promise<void>;
@@ -27,34 +29,7 @@ interface RequestsState {
   clearRequests: () => void;
 }
 
-const roleFromBackend = (role?: string): UserRole => (role === "FABRICA" ? "gif" : "coordinador");
-
-const toRequest = (subject: ApiSubject): LmsRequest => {
-  const adjustmentNotes = subject.comments
-    ?.filter((comment) => comment.commentType === "DEVOLUCION")
-    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-    .at(-1)?.content;
-
-  return {
-    id: String(subject.id),
-    subject: subject.name,
-    level: subject.academicLevel,
-    source: subject.driveFolderUrl,
-    summary: subject.contentDescription,
-    status: subject.currentStatus,
-    createdAt: subject.createdAt,
-    createdByRole: roleFromBackend(subject.createdBy?.role),
-    createdByName: subject.createdBy?.fullName,
-    semester: subject.semester,
-    program: subject.programName ?? "",
-    contentTypes: subject.contentTypes?.map((contentType) => ({
-      code: contentType.code,
-      name: contentType.name,
-    })) ?? [],
-    adjustmentNotes,
-    approvalLink: subject.cdigitalUrl ?? undefined,
-  };
-};
+const toRequest = (subject: ApiSubject): LmsRequest => subjectToRequest(subject);
 
 const sortNewestFirst = (requests: LmsRequest[]) =>
   [...requests].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -77,6 +52,16 @@ export const useRequestsStore = create<RequestsState>()(
       requests: [],
       isLoading: false,
       error: null,
+      loadRequests: async () => {
+        set({ isLoading: true, error: null });
+        try {
+          const subjects = await materiasApi.list();
+          set({ requests: sortNewestFirst(subjects.map(toRequest)), isLoading: false });
+        } catch (error) {
+          set({ isLoading: false, error: readError(error) });
+          throw error;
+        }
+      },
       loadMyRequests: async () => {
         set({ isLoading: true, error: null });
         try {
@@ -90,7 +75,7 @@ export const useRequestsStore = create<RequestsState>()(
       loadCoordinatorRequests: async () => {
         set({ isLoading: true, error: null });
         try {
-          const subjects = await materiasApi.inbox();
+          const subjects = await materiasApi.list();
           set({ requests: sortNewestFirst(subjects.map(toRequest)), isLoading: false });
         } catch (error) {
           set({ isLoading: false, error: readError(error) });

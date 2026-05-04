@@ -4,7 +4,9 @@ import type {
   ApiContentType,
   ApiProgram,
   ApiSemester,
+  ApiActivityEntry,
   ApiSubject,
+  ApiSubjectMetrics,
   ApiUser,
   AuthSession,
   CreateSubjectPayload,
@@ -99,13 +101,16 @@ export const catalogsApi = {
 };
 
 export const materiasApi = {
+  list: () => apiRequest<ApiSubject[]>("/materias"),
+  metrics: () => apiRequest<ApiSubjectMetrics>("/materias/metrics"),
+  activity: () => apiRequest<ApiActivityEntry[]>("/materias/activity"),
+  get: (id: number) => apiRequest<ApiSubject>(`/materias/${id}`),
   create: (payload: CreateSubjectPayload) =>
     apiRequest<ApiSubject>("/materias", {
       method: "POST",
       body: payload,
     }),
   mine: () => apiRequest<ApiSubject[]>("/materias/fabrica/mine"),
-  inbox: () => apiRequest<ApiSubject[]>("/materias/lms/inbox"),
   updateStatus: (id: number, payload: UpdateSubjectStatusPayload) =>
     apiRequest<ApiSubject>(`/materias/${id}/status`, {
       method: "PATCH",

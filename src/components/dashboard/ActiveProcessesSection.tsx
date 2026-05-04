@@ -9,10 +9,11 @@ import { SectionTitle } from "@/components/ui/SectionTitle";
 import { Badge } from "@/components/ui/Badge";
 import { StatusPill } from "@/components/shared/StatusPill";
 import { DASHBOARD_SECTION_IDS } from "@/lib/dashboardSectionIds";
-import { dashboardRouteShortcuts } from "@/data/mockProcesses";
+import { toDashboardActiveCard } from "@/lib/requestDerived";
 import { PRIORITY_STYLES } from "@/lib/constants";
 import { techCoverImageForKey } from "@/lib/techCoverImages";
 import { motionEase } from "@/lib/animations";
+import { useRequestsStore } from "@/store/requestsStore";
 import type { DashboardActiveCard, Status } from "@/types";
 import { cn } from "@/lib/cn";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
@@ -84,10 +85,12 @@ function FuturisticProgress({ value }: { value: number }) {
 
 export function ActiveProcessesSection() {
   const reducedMotion = useReducedMotion() === true;
+  const requests = useRequestsStore((state) => state.requests);
   const panelItems = useMemo((): DashboardActiveCard[] => {
-    // Solo mostramos los atajos de rutas que son las tarjetas operativas principales
-    return dashboardRouteShortcuts;
-  }, []);
+    return requests
+      .filter((request) => request.status !== "aprobado")
+      .map(toDashboardActiveCard);
+  }, [requests]);
 
   return (
     <AnimatedSection
