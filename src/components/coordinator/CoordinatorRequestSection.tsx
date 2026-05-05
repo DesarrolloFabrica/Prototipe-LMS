@@ -1,4 +1,4 @@
-﻿import type { ApiProgram, ApiSemester, RequestStatus } from "@/types";
+import type { ApiProgram, ApiSemester, RequestStatus } from "@/types";
 import { catalogsApi } from "@/lib/api";
 import { cn } from "@/lib/cn";
 import { ContentTypePills } from "@/components/shared/ContentTypePills";
@@ -279,12 +279,13 @@ export function CoordinatorRequestsSection() {
                   </p>
                 </div>
 
-                <div className="hidden border-b border-slate-200 bg-slate-50/90 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400 md:grid md:grid-cols-[2rem_minmax(0,1.4fr)_minmax(9rem,0.95fr)_minmax(11rem,1fr)_minmax(14rem,1.5fr)_minmax(7.5rem,auto)_auto_auto] md:items-center md:gap-x-4 md:px-4">
+                <div className="hidden border-b border-slate-200 bg-slate-50/90 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400 md:grid md:grid-cols-[2rem_minmax(0,1.4fr)_minmax(9rem,0.95fr)_minmax(11rem,1.2fr)_minmax(10rem,1fr)_minmax(6rem,0.7fr)_minmax(7.5rem,auto)_auto_auto] md:items-center md:gap-x-4 md:px-4">
                   <span />
                   <span>Solicitud</span>
                   <span>Alta</span>
                   <span>GIF</span>
                   <span>Programa</span>
+                  <span>Semestre</span>
                   <span className="text-center">Estado</span>
                   <span className="text-right md:col-span-2"> </span>
                 </div>
@@ -301,7 +302,7 @@ export function CoordinatorRequestsSection() {
                             "bg-sky-50/60 shadow-[inset_0_0_0_1px_rgba(37,99,235,0.35)]",
                         )}
                       >
-                        <div className="flex items-center gap-2 px-3 py-2 sm:gap-3 sm:px-3 sm:py-2 md:grid md:grid-cols-[2rem_minmax(0,1.4fr)_minmax(9rem,0.95fr)_minmax(11rem,1fr)_minmax(14rem,1.5fr)_minmax(7.5rem,auto)_auto_auto] md:items-center md:gap-x-4 md:px-4 md:py-2">
+                        <div className="flex items-center gap-2 px-3 py-2 sm:gap-3 sm:px-3 sm:py-2 md:grid md:grid-cols-[2rem_minmax(0,1.4fr)_minmax(9rem,0.95fr)_minmax(11rem,1.2fr)_minmax(10rem,1fr)_minmax(6rem,0.7fr)_minmax(7.5rem,auto)_auto_auto] md:items-center md:gap-x-4 md:px-4 md:py-2">
                           <Folder
                             className="h-5 w-5 shrink-0 text-slate-500 md:justify-self-center"
                             strokeWidth={1.75}
@@ -317,7 +318,7 @@ export function CoordinatorRequestsSection() {
                               className="hidden tabular-nums text-slate-500 md:block"
                               title="Fecha de registro"
                             >
-                              {request.createdAt}
+                              {request.createdAt.split("T")[0]}
                             </span>
                             <span
                               className="hidden max-w-full truncate md:block"
@@ -326,12 +327,16 @@ export function CoordinatorRequestsSection() {
                               {request.createdByName?.trim() ? request.createdByName : "—"}
                             </span>
                             <span
-                              className="hidden max-w-full truncate md:block"
-                              title={`${request.program} · ${request.semester}`}
+                              className="hidden max-w-full truncate text-slate-700 md:block"
+                              title={request.program}
                             >
-                              <span className="text-slate-700">{request.program}</span>
-                              <span className="text-slate-300"> · </span>
-                              <span className="text-slate-500">{request.semester}</span>
+                              {request.program}
+                            </span>
+                            <span
+                              className="hidden tabular-nums text-slate-500 md:block"
+                              title={request.semester}
+                            >
+                              {request.semester}
                             </span>
                           </div>
 
@@ -381,18 +386,54 @@ export function CoordinatorRequestsSection() {
                             <div className="grid gap-3 md:grid-cols-2">
                               <div className="rounded-xl bg-white p-4 ring-1 ring-slate-200">
                                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                                  Drive
+                                  Material
                                 </p>
 
-                                <a
-                                  href={request.source}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="mt-2 inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
-                                >
-                                  Ver enlace
-                                  <span aria-hidden="true">↗</span>
-                                </a>
+                                {request.megaFolderLink?.trim() ? (
+                                  <div className="mt-2 space-y-2">
+                                    <a
+                                      href={request.megaFolderLink.trim()}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
+                                    >
+                                      Abrir carpeta Mega
+                                      <span aria-hidden="true">↗</span>
+                                    </a>
+                                    {request.megaStatus === "created_without_public_link" ? (
+                                      <p className="text-xs font-medium text-amber-800">Acceso interno Mega</p>
+                                    ) : null}
+                                  </div>
+                                ) : request.megaPath?.trim() ? (
+                                  <div className="mt-2 space-y-2">
+                                    <p className="text-xs font-medium text-teal-800">
+                                      Carpeta Mega creada
+                                    </p>
+                                    <p className="rounded-md bg-slate-50 px-2 py-1 text-xs font-medium text-slate-700">
+                                      {request.megaPath.trim()}
+                                    </p>
+                                    <p className="text-xs font-medium text-amber-800">
+                                      Link público pendiente
+                                    </p>
+                                  </div>
+                                ) : (
+                                  <div className="mt-2 space-y-2">
+                                    <p className="text-xs font-medium text-amber-800">
+                                      Carpeta Mega no disponible
+                                    </p>
+                                    {request.source ? (
+                                      <a
+                                        href={request.source}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
+                                      >
+                                        Abrir en Drive (respaldo)
+                                        <span aria-hidden="true">↗</span>
+                                      </a>
+                                    ) : null}
+                                  </div>
+                                )}
                               </div>
 
                               <div className="rounded-xl bg-white p-4 ring-1 ring-slate-200">

@@ -60,7 +60,7 @@ const schema = z.object({
     subject: z.string().min(1, "La materia es obligatoria"),
     level: z.string().min(1, "El nivel o tipo es obligatorio"),
     summary: z.string().min(10, "La descripción debe tener al menos 10 caracteres"),
-    source: z.string().url("Debe ser una URL válida (ej: https://drive.google.com/...)"),
+    driveFolderUrl: z.string().url("Debe ser una URL válida (ej: https://drive.google.com/...)"),
     contentTypeCodes: z.array(z.string()).min(1, "Selecciona al menos un tipo de contenido"),
 });
 
@@ -144,14 +144,14 @@ export function DriveSubmissionSection() {
             await createRequest({
                 subject: data.subject,
                 level: data.level as AcademicLevel,
-                source: data.source,
+                driveFolderUrl: data.driveFolderUrl,
                 summary: data.summary,
                 semester,
                 program,
                 contentTypeCodes: data.contentTypeCodes as ContentTypeCode[],
             });
             toast.success("Solicitud enviada");
-            reset({ subject: "", level: "", source: "", summary: "", contentTypeCodes: [] });
+            reset({ subject: "", level: "", driveFolderUrl: "", summary: "", contentTypeCodes: [] });
             setSemester("");
             setProgram("");
             setView("list");
@@ -288,7 +288,7 @@ export function DriveSubmissionSection() {
                                 <Input
                                     className="h-12 border-slate-200 bg-slate-50 text-slate-700 shadow-none transition-colors focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
                                     placeholder="Enlace de la carpeta..."
-                                    {...register("source")}
+                                    {...register("driveFolderUrl")}
                                 />
                             </Field>
 

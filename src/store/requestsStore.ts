@@ -7,7 +7,7 @@ import type { AcademicLevel, ApiSubject, ContentTypeCode, LmsRequest } from "@/t
 interface CreateRequestInput {
   subject: string;
   level: AcademicLevel;
-  source: string;
+  driveFolderUrl: string;
   summary: string;
   semester: string;
   program: string;
@@ -91,7 +91,7 @@ export const useRequestsStore = create<RequestsState>()(
             academicLevel: input.level,
             programName: input.program,
             contentDescription: input.summary,
-            driveFolderUrl: input.source,
+            driveFolderUrl: input.driveFolderUrl,
             contentTypeCodes: input.contentTypeCodes,
           });
           set((state) => ({

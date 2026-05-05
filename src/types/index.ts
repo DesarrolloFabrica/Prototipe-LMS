@@ -102,6 +102,10 @@ export interface ApiSubject {
   programName?: string | null;
   contentDescription: string;
   driveFolderUrl: string;
+  megaFolderId?: string | null;
+  megaFolderLink?: string | null;
+  megaPath?: string | null;
+  megaStatus?: string | null;
   cdigitalUrl?: string | null;
   currentStatus: SubjectStatus;
   createdByUserId: number;
@@ -166,6 +170,11 @@ export interface LmsRequest {
   subject: string;
   level: AcademicLevel;
   source: string;
+  megaFolderId?: string;
+  /** Enlace público a la carpeta Mega (prioridad para coordinador LMS). */
+  megaFolderLink?: string;
+  megaPath?: string;
+  megaStatus?: string;
   summary: string;
   status: RequestStatus;
   createdAt: string;
