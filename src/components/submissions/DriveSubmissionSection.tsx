@@ -1,6 +1,6 @@
 ﻿import { useEffect, useState, type ReactNode } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Send } from "lucide-react";
+import { ClipboardList, FilePlus2, Inbox, Send } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -13,6 +13,7 @@ import { FilterCombobox } from "@/components/ui/FilterCombobox";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { catalogsApi, materiasApi } from "@/lib/api";
+import { formatDateTime } from "@/lib/format";
 import { useAuthStore } from "@/store/authStore";
 import { useRequestsStore } from "@/store/requestsStore";
 import type { AcademicLevel, ApiContentType, ApiProgram, ApiSemester, ContentTypeCode, RequestStatus } from "@/types";
@@ -200,26 +201,63 @@ export function DriveSubmissionSection() {
         <div className="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.03)_1px,transparent_1px)] bg-[size:3rem_3rem] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_10%,transparent_100%)]" />
       </div>
 
-      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-[min(1280px,calc(100%-2rem))] flex-col px-4 pb-12 pt-36 sm:px-6 sm:pb-16 sm:pt-50">
-        <div className="mb-6 flex items-center justify-center gap-2">
+      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-[min(1280px,calc(100%-2rem))] flex-col px-4 pb-12 pt-12 sm:px-6 sm:pb-16 sm:pt-16">
+        <div className="mb-6 grid gap-3 md:grid-cols-2">
           <button
             type="button"
             onClick={() => setView("new")}
-            className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-              view === "new" ? "bg-teal-600 text-white shadow" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            className={`group rounded-2xl border p-3 text-left shadow-sm transition ${
+              view === "new"
+                ? "border-blue-200 bg-blue-600 text-white shadow-blue-950/10"
+                : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-blue-50/40"
             }`}
           >
-            Nueva solicitud
+            <div className="flex items-start gap-3">
+              <span
+                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
+                  view === "new" ? "bg-white/15 text-white" : "bg-blue-50 text-blue-700"
+                }`}
+              >
+                <FilePlus2 className="h-4 w-4" />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-sm font-extrabold">Nueva solicitud</span>
+                <span className={`mt-0.5 block text-xs leading-relaxed ${view === "new" ? "text-blue-50" : "text-slate-500"}`}>
+                  Registra material de Drive y prepara la transferencia a MEGA.
+                </span>
+              </span>
+            </div>
           </button>
 
           <button
             type="button"
             onClick={() => setView("list")}
-            className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-              view === "list" ? "bg-teal-600 text-white shadow" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            className={`group rounded-2xl border p-3 text-left shadow-sm transition ${
+              view === "list"
+                ? "border-slate-300 bg-slate-900 text-white shadow-slate-950/10"
+                : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50"
             }`}
           >
-            Mis solicitudes
+            <div className="flex items-start gap-3">
+              <span
+                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
+                  view === "list" ? "bg-white/15 text-white" : "bg-slate-100 text-slate-700"
+                }`}
+              >
+                <ClipboardList className="h-4 w-4" />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-sm font-extrabold">Mis solicitudes</span>
+                <span className={`mt-0.5 block text-xs leading-relaxed ${view === "list" ? "text-slate-200" : "text-slate-500"}`}>
+                  Consulta tus envíos, ajustes solicitados y material transferido.
+                </span>
+                <span className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${
+                  view === "list" ? "bg-white/15 text-white" : "bg-blue-50 text-blue-700"
+                }`}>
+                  {myRequests.length} solicitud(es)
+                </span>
+              </span>
+            </div>
           </button>
         </div>
 
@@ -227,9 +265,9 @@ export function DriveSubmissionSection() {
                 {view === "new" && (
                     <form
                         onSubmit={handleSubmit(onSubmit)}
-                        className="mx-auto mt-10 w-full max-w-4xl px-4"
+                        className="mt-5 w-full"
                     >
-                        <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                        <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                             {isTransferActive && (
                               <div className="mb-5 rounded-2xl border border-blue-200 bg-blue-50 p-4">
                                 <div className="mb-3 h-2 overflow-hidden rounded-full bg-blue-100">
@@ -256,15 +294,15 @@ export function DriveSubmissionSection() {
                             )}
                             {/* Campo de materia */}
                             {/* Fila inicial: materia y nivel/tipo */}
-                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                                 {/* Campo de materia */}
                                 <div>
-                                    <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-slate-600">
+                                    <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">
                                         Materia
                                     </label>
 
                                     <Input
-                                        className="h-12 border-slate-200 bg-slate-50 text-slate-700 shadow-none transition-colors focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
+                                        className="h-11 border-slate-200 bg-slate-50 text-slate-700 shadow-none transition-colors focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
                                         placeholder="Nombre..."
                                         {...register("subject")}
                                     />
@@ -283,7 +321,7 @@ export function DriveSubmissionSection() {
                                     />
                                 </div>
                             </div>
-                            <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                            <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
                                 <div>
                                     <FilterCombobox
                                         label="Semestre"
@@ -310,20 +348,20 @@ export function DriveSubmissionSection() {
                                 </div>
                             </div>
 
-              <Field label="URL de Google Drive" className="mt-5">
+              <Field label="URL de Google Drive" className="mt-3">
                 <Input
-                  className="h-12 border-slate-200 bg-slate-50 text-slate-700 shadow-none transition-colors focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
+                  className="h-11 border-slate-200 bg-slate-50 text-slate-700 shadow-none transition-colors focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
                   placeholder="Enlace de la carpeta..."
                   {...register("source")}
                 />
               </Field>
 
-              <Field label="Tipos de contenido" className="mt-5">
+              <Field label="Tipos de contenido" className="mt-3">
                 <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                   {contentTypes.map((contentType) => (
                     <label
                       key={contentType.code}
-                      className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-600"
+                      className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-semibold text-slate-600"
                     >
                       <input
                         type="checkbox"
@@ -337,10 +375,10 @@ export function DriveSubmissionSection() {
                 </div>
               </Field>
 
-              <Field label="Descripción" className="mt-5">
+              <Field label="Descripción" className="mt-3">
                 <Textarea
                   className="resize-none border-slate-200 bg-slate-50 text-slate-700 shadow-none transition-colors focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
-                  rows={4}
+                  rows={2}
                   placeholder="Breve detalle del material..."
                   {...register("summary")}
                 />
@@ -349,17 +387,17 @@ export function DriveSubmissionSection() {
               <RevealOnScroll
                 as="section"
                 viewportAmount={0.18}
-                className="relative mt-6 overflow-hidden rounded-[2rem] border border-blue-200/50 bg-gradient-to-br from-blue-50/90 to-indigo-50/90 p-6 shadow-inner sm:p-8"
+                className="relative mt-4 overflow-hidden rounded-[1.5rem] border border-blue-200/50 bg-gradient-to-br from-blue-50/90 to-indigo-50/90 p-4 shadow-inner"
               >
                 <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-blue-400/20 blur-2xl" />
 
-                <div className="relative z-10 flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
+                <div className="relative z-10 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
                   <div>
                     <h2 className="text-sm font-bold uppercase tracking-widest text-blue-900">
                       Revisión previa al envío
                     </h2>
 
-                    <p className="mt-2 max-w-md text-sm text-blue-800/70">
+                    <p className="mt-1.5 max-w-md text-xs leading-relaxed text-blue-800/70">
                                             Confirma que el resumen y el enlace son correctos. Al enviar, el sistema copiará el material a MEGA y lo dejará listo como{" "}
                                             <span className="font-semibold text-blue-900">Pendiente</span>.
                     </p>
@@ -368,7 +406,7 @@ export function DriveSubmissionSection() {
                   <Button
                     type="submit"
                     disabled={isLoading}
-                    className="group relative overflow-hidden rounded-2xl bg-blue-600 px-8 py-4 font-semibold text-white shadow-[0_0_20px_rgb(37,99,235,0.3)] transition-all hover:-translate-y-0.5 hover:shadow-[0_0_25px_rgb(37,99,235,0.5)]"
+                    className="group relative overflow-hidden rounded-xl bg-blue-600 px-6 py-3 font-semibold text-white shadow-[0_0_20px_rgb(37,99,235,0.3)] transition-all hover:-translate-y-0.5 hover:shadow-[0_0_25px_rgb(37,99,235,0.5)]"
                   >
                     <span className="relative z-10 flex items-center gap-2">
                       {isTransferActive ? "Preparando link MEGA..." : "Enviar solicitud"}
@@ -463,14 +501,31 @@ export function DriveSubmissionSection() {
                                     )}
                                 </div>
 
-                                {filteredRequests.length === 0 ? (
+                                {isLoading && myRequests.length === 0 ? (
+                                    <RequestsSkeleton />
+                                ) : filteredRequests.length === 0 ? (
                                     <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 text-center">
-                                        <p className="text-sm font-medium text-slate-700">
+                                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-blue-600 shadow-sm ring-1 ring-slate-200">
+                                            <Inbox className="h-5 w-5" />
+                                        </div>
+                                        <p className="mt-4 text-sm font-medium text-slate-700">
                                             No hay solicitudes para este filtro.
                                         </p>
                                         <p className="mt-1 text-xs text-slate-500">
                                             Ajusta los filtros para ver más resultados.
                                         </p>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setStatusFilter("todas");
+                                                setSemesterFilter("todos");
+                                                setProgramFilter("todos");
+                                                setView("new");
+                                            }}
+                                            className="mt-4 rounded-full bg-blue-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700 active:scale-95"
+                                        >
+                                            Crear nueva solicitud
+                                        </button>
                                     </div>
                                 ) : (
                                     <div className="grid gap-3">
@@ -551,20 +606,20 @@ export function DriveSubmissionSection() {
                                                 `}
                                             >
                                                 <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-5">
-                                                    <div className="grid gap-3 md:grid-cols-2">
+                                                    <div className="grid gap-3 lg:grid-cols-[minmax(220px,0.85fr)_minmax(0,1.15fr)]">
                                                         <div className="rounded-xl bg-white p-4 ring-1 ring-slate-200">
                                                             <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                                                                 Creación
                                                             </p>
                                                             <p className="mt-2 text-sm font-medium text-slate-700">
-                                                                {request.createdAt}
+                                                                {formatDateTime(request.createdAt)}
                                                             </p>
                                                             <p className="mt-1 text-xs text-slate-500">
                                                                 {request.createdByName ?? "GIF"} · {request.createdByRole}
                                                             </p>
                                                         </div>
 
-                                                        <div className="rounded-xl bg-white p-4 ring-1 ring-slate-200 md:col-span-2">
+                                                        <div className="rounded-xl bg-white p-4 ring-1 ring-slate-200">
                                                             <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                                                                 Descripción
                                                             </p>
@@ -573,11 +628,11 @@ export function DriveSubmissionSection() {
                                                             </p>
                                                         </div>
 
-                                                        <div className="rounded-xl bg-white p-4 ring-1 ring-slate-200 md:col-span-2">
+                                                        <div className="rounded-xl bg-white p-4 ring-1 ring-slate-200 lg:col-span-2">
                                                             <ContentTypePills items={request.contentTypes} />
                                                         </div>
 
-                                                        <MegaFilesPanel subjectId={request.id} />
+                                                        <MegaFilesPanel subjectId={request.id} className="lg:col-span-2" />
                                                     </div>
 
                                                     {/* Bloque de observaciones del coordinador:
@@ -641,10 +696,35 @@ export function DriveSubmissionSection() {
 function Field({ label, className, children }: { label: string; className?: string; children: ReactNode }) {
   return (
     <div className={className}>
-      <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-slate-600">{label}</label>
+      <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">{label}</label>
       {children}
     </div>
   );
+}
+
+function RequestsSkeleton() {
+    return (
+        <div className="grid gap-3">
+            {[0, 1, 2].map((item) => (
+                <div key={item} className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0 flex-1 space-y-3">
+                            <div className="h-3 w-28 animate-pulse rounded-full bg-slate-200" />
+                            <div className="h-5 w-2/5 animate-pulse rounded-full bg-slate-200" />
+                        </div>
+                        <div className="h-7 w-24 animate-pulse rounded-full bg-slate-200" />
+                    </div>
+                    <div className="mt-5 border-t border-slate-100 pt-4">
+                        <div className="flex flex-wrap gap-3">
+                            <div className="h-7 w-24 animate-pulse rounded-full bg-slate-200" />
+                            <div className="h-7 w-40 animate-pulse rounded-full bg-slate-200" />
+                            <div className="h-7 w-20 animate-pulse rounded-full bg-slate-200" />
+                        </div>
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
 }
 
 function labelForContentType(code: string) {

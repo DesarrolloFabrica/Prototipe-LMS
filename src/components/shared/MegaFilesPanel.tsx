@@ -74,10 +74,14 @@ export function MegaFilesPanel({ subjectId, className = "" }: MegaFilesPanelProp
         </div>
       </div>
 
-      {isLoading && <p className="mt-3 text-sm text-sky-700">Cargando archivos...</p>}
+      {isLoading && <MegaFilesSkeleton />}
       {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
       {!isLoading && !error && files.length === 0 && (
-        <p className="mt-3 text-sm text-slate-500">Todavia no hay archivos transferidos.</p>
+        <div className="mt-3 rounded-lg border border-sky-100 bg-white p-4 text-center">
+          <Folder className="mx-auto h-5 w-5 text-sky-600" />
+          <p className="mt-2 text-sm font-semibold text-slate-700">Todavia no hay archivos transferidos.</p>
+          <p className="mt-1 text-xs text-slate-500">Cuando la transferencia finalice, podras navegar las carpetas aqui.</p>
+        </div>
       )}
 
       {files.length > 0 && (
@@ -223,6 +227,27 @@ function getFolder(root: FolderNode, path: string[]) {
     current = next;
   }
   return current;
+}
+
+function MegaFilesSkeleton() {
+  return (
+    <div className="mt-3 overflow-hidden rounded-lg bg-white ring-1 ring-sky-100">
+      <div className="border-b border-sky-100 bg-sky-50/60 px-3 py-3">
+        <div className="h-4 w-24 animate-pulse rounded-full bg-sky-100" />
+      </div>
+      <div className="space-y-2 p-3">
+        {[0, 1, 2, 3].map((item) => (
+          <div key={item} className="flex items-center justify-between gap-3">
+            <div className="h-4 w-2/5 animate-pulse rounded-full bg-slate-200" />
+            <div className="flex gap-2">
+              <div className="h-7 w-16 animate-pulse rounded-full bg-slate-100" />
+              <div className="h-7 w-20 animate-pulse rounded-full bg-slate-100" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function FilePreviewModal({

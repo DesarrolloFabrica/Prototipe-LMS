@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { motion } from "framer-motion";
-import { LogOut, Plus } from "lucide-react";
+import { ClipboardList, LogOut, Plus } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   DASHBOARD_SCROLL_TAB_IDS,
@@ -32,11 +32,15 @@ export function TopNavigation({ variant = "solid" }: { variant?: TopNavigationVa
   const user = useAuthStore((state) => state.user);
   const clearRequests = useRequestsStore((state) => state.clearRequests);
   const setUserRole = useUIStore((state) => state.setUserRole);
+  const uiUserRole = useUIStore((state) => state.userRole);
   const isDashboard = pathname === "/dashboard";
   const dashboardNavOverLight = useUIStore((state) => state.dashboardNavOverLight);
   const setDashboardNavScrollActiveTo = useUIStore((state) => state.setDashboardNavScrollActiveTo);
   const darkNav = isGlass && dashboardNavOverLight;
   const shellClass = isGlass ? glassShell : solidShell;
+  const isReviewer = user?.role === "LMS" || user?.role === "ADMIN" || uiUserRole === "coordinador";
+  const PrimaryActionIcon = isReviewer ? ClipboardList : Plus;
+  const primaryActionLabel = isReviewer ? "Solicitudes" : "Nueva carga";
 
   function handleNewSubmissionClick() {
     if (pathname === "/dashboard") {
@@ -65,7 +69,14 @@ export function TopNavigation({ variant = "solid" }: { variant?: TopNavigationVa
   };
 
   return (
-    <header className={cn("z-50", isGlass ? "px-4 pt-6 sm:px-8 sm:pt-8" : "sticky top-4 px-4 sm:px-6")}>
+    <header
+      className={cn(
+        "z-50",
+        isGlass
+          ? "px-4 pt-6 sm:px-8 sm:pt-8"
+          : "relative px-4 pt-4 sm:px-6",
+      )}
+    >
       <div className={cn(navShellBase, isGlass ? "mx-auto max-w-5xl" : "mx-auto max-w-7xl", shellClass)}>
         <div className="flex items-center gap-3">
           <Link
@@ -112,8 +123,8 @@ export function TopNavigation({ variant = "solid" }: { variant?: TopNavigationVa
                 "bg-linear-to-r from-blue-600 via-indigo-600 to-indigo-700 shadow-[0_10px_20px_-5px_rgba(59,130,246,0.5)] ring-1 ring-white/20",
               )}
             >
-              <Plus className="h-3.5 w-3.5" strokeWidth={3} />
-              <span className="max-sm:hidden">Nueva carga</span>
+              <PrimaryActionIcon className="h-3.5 w-3.5" strokeWidth={3} />
+              <span className="max-sm:hidden">{primaryActionLabel}</span>
               <div className="absolute inset-0 -translate-x-full bg-linear-to-r from-transparent via-white/20 to-transparent transition-transform duration-500 group-hover:translate-x-full" />
             </button>
           </motion.div>
