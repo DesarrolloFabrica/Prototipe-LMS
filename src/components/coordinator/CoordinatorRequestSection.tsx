@@ -8,11 +8,13 @@ import { FilterCombobox } from "@/components/ui/FilterCombobox";
 import { useRequestsStore } from "@/store/requestsStore";
 import { useAuthStore } from "@/store/authStore";
 import { useEffect, useState } from "react";
-import { Archive, ClipboardList } from "lucide-react";
+import { Archive, ClipboardList, Inbox } from "lucide-react";
 import { toast } from "sonner";
+import { formatDateTime } from "@/lib/format";
 
 export function CoordinatorRequestsSection() {
   const requests = useRequestsStore((state) => state.requests);
+  const isLoading = useRequestsStore((state) => state.isLoading);
   const loadCoordinatorRequests = useRequestsStore((state) => state.loadCoordinatorRequests);
   const approveRequest = useRequestsStore((state) => state.approveRequest);
   const rejectRequest = useRequestsStore((state) => state.rejectRequest);
@@ -199,7 +201,7 @@ export function CoordinatorRequestsSection() {
         <div className="absolute -right-[5%] top-[20%] h-[35rem] w-[35rem] rounded-full bg-indigo-300/20 blur-[100px]" />
         <div className="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.03)_1px,transparent_1px)] bg-[size:3rem_3rem]" />
       </div>
-      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 pb-12 pt-28 sm:px-6 sm:pt-32">
+      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 pb-12 pt-12 sm:px-6 sm:pt-16">
         <div className="mb-6 text-center">
           <p className="text-xs font-bold uppercase tracking-[0.25em] text-blue-600">Panel LMS</p>
           <h2 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900">Solicitudes recibidas</h2>
@@ -367,9 +369,14 @@ export function CoordinatorRequestsSection() {
                     onPageSizeChange={setPageSize}
                   />
                 )}
-                {filteredRequests.length === 0 ? (
+                {isLoading && activeRequests.length === 0 ? (
+                  <RequestsSkeleton />
+                ) : filteredRequests.length === 0 ? (
                   <div className="rounded-2xl border border-slate-200 bg-slate-50 p-8 text-center">
-                    <p className="text-sm font-semibold text-slate-700">
+                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-blue-600 shadow-sm ring-1 ring-slate-200">
+                      <Inbox className="h-5 w-5" />
+                    </div>
+                    <p className="mt-4 text-sm font-semibold text-slate-700">
                       No hay solicitudes activas para los filtros seleccionados.
                     </p>
                     <p className="mx-auto mt-1 max-w-md text-xs leading-relaxed text-slate-500">
@@ -483,7 +490,7 @@ export function CoordinatorRequestsSection() {
                               </p>
 
                               <p className="mt-2 text-sm font-medium text-slate-700">
-                                {request.createdAt}
+                                {formatDateTime(request.createdAt)}
                               </p>
 
                               <p className="mt-1 text-xs text-slate-500">
@@ -671,5 +678,30 @@ export function CoordinatorRequestsSection() {
 
 function readError(error: unknown) {
   return error instanceof Error ? error.message : "No fue posible conectar con el backend.";
+}
+
+function RequestsSkeleton() {
+  return (
+    <div className="grid gap-3">
+      {[0, 1, 2].map((item) => (
+        <div key={item} className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0 flex-1 space-y-3">
+              <div className="h-3 w-28 animate-pulse rounded-full bg-slate-200" />
+              <div className="h-5 w-2/5 animate-pulse rounded-full bg-slate-200" />
+            </div>
+            <div className="h-7 w-24 animate-pulse rounded-full bg-slate-200" />
+          </div>
+          <div className="mt-5 border-t border-slate-100 pt-4">
+            <div className="flex flex-wrap gap-3">
+              <div className="h-7 w-24 animate-pulse rounded-full bg-slate-200" />
+              <div className="h-7 w-40 animate-pulse rounded-full bg-slate-200" />
+              <div className="h-7 w-20 animate-pulse rounded-full bg-slate-200" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }
 
