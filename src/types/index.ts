@@ -117,6 +117,17 @@ export interface ApiSubject {
   comments?: ApiComment[];
 }
 
+export interface ApiSubjectTransferFile {
+  id: number;
+  subjectId: number;
+  fileName: string;
+  filePath: string[];
+  megaUrl: string;
+  sizeBytes?: number | null;
+  mimeType?: string | null;
+  createdAt: string;
+}
+
 export interface ApiSubjectMetrics {
   total: number;
   active: number;
@@ -152,6 +163,41 @@ export interface CreateSubjectPayload {
   contentDescription: string;
   driveFolderUrl: string;
   contentTypeCodes: ContentTypeCode[];
+  transferId?: string;
+}
+
+export interface ApiTransferProgress {
+  transferId: string;
+  status: "idle" | "listing" | "uploading" | "completed" | "failed";
+  totalFiles: number;
+  completedFiles: number;
+  totalBytes: number;
+  transferredBytes: number;
+  percent: number;
+  currentFile?: string;
+  error?: string;
+  updatedAt: string;
+}
+
+export interface ApiUploadHistoryItem {
+  subjectId: number;
+  subjectName: string;
+  semester: string;
+  academicLevel: AcademicLevel;
+  programName: string;
+  currentStatus: SubjectStatus;
+  createdAt: string;
+  reviewedAt?: string | null;
+  completedAt?: string | null;
+  createdBy?: Pick<ApiUser, "id" | "email" | "fullName" | "role"> | null;
+  assignedLmsUser?: Pick<ApiUser, "id" | "email" | "fullName" | "role"> | null;
+  fileCount: number;
+  folderCount: number;
+  totalBytes: number;
+  firstUploadedAt?: string | null;
+  lastUploadedAt?: string | null;
+  rootFolders: string[];
+  hasFiles: boolean;
 }
 
 export interface UpdateSubjectStatusPayload {

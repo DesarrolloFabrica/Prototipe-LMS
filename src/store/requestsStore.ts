@@ -12,6 +12,7 @@ interface CreateRequestInput {
   semester: string;
   program: string;
   contentTypeCodes: ContentTypeCode[];
+  transferId?: string;
   createdByName?: string;
 }
 
@@ -93,6 +94,7 @@ export const useRequestsStore = create<RequestsState>()(
             contentDescription: input.summary,
             driveFolderUrl: input.source,
             contentTypeCodes: input.contentTypeCodes,
+            transferId: input.transferId,
           });
           set((state) => ({
             requests: replaceRequest(state.requests, toRequest(subject)),
