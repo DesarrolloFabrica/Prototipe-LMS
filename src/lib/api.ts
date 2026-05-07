@@ -6,7 +6,10 @@ import type {
   ApiSemester,
   ApiActivityEntry,
   ApiSubject,
+  ApiSubjectTransferFile,
   ApiSubjectMetrics,
+  ApiTransferProgress,
+  ApiUploadHistoryItem,
   ApiUser,
   AuthSession,
   CreateSubjectPayload,
@@ -108,7 +111,14 @@ export const materiasApi = {
   list: () => apiRequest<ApiSubject[]>("/materias"),
   metrics: () => apiRequest<ApiSubjectMetrics>("/materias/metrics"),
   activity: () => apiRequest<ApiActivityEntry[]>("/materias/activity"),
+  uploadHistory: () => apiRequest<ApiUploadHistoryItem[]>("/materias/lms/upload-history"),
   get: (id: number) => apiRequest<ApiSubject>(`/materias/${id}`),
+  files: (id: number) => apiRequest<ApiSubjectTransferFile[]>(`/materias/${id}/files`),
+  fileDownloadUrl: (id: number, fileId: number) => `${API_BASE_URL}/materias/${id}/files/${fileId}/download`,
+  filePreviewUrl: (id: number, fileId: number) => `${API_BASE_URL}/materias/${id}/files/${fileId}/download?inline=true`,
+  zipDownloadUrl: (id: number) => `${API_BASE_URL}/materias/${id}/download.zip`,
+  transferProgress: (transferId: string) =>
+    apiRequest<ApiTransferProgress>(`/materias/transfers/${transferId}/progress`),
   create: (payload: CreateSubjectPayload) =>
     apiRequest<ApiSubject>("/materias", {
       method: "POST",

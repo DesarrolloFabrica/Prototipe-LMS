@@ -1,6 +1,10 @@
 ﻿import type { ApiProgram, ApiSemester, RequestStatus } from "@/types";
 import { catalogsApi } from "@/lib/api";
 import { ContentTypePills } from "@/components/shared/ContentTypePills";
+import { MegaFilesPanel } from "@/components/shared/MegaFilesPanel";
+import { PaginationControls } from "@/components/shared/PaginationControls";
+import { UploadHistorySection } from "@/components/coordinator/UploadHistorySection";
+import { FilterCombobox } from "@/components/ui/FilterCombobox";
 import { useRequestsStore } from "@/store/requestsStore";
 import { useAuthStore } from "@/store/authStore";
 import { useEffect, useState } from "react";
@@ -19,6 +23,9 @@ export function CoordinatorRequestsSection() {
   const [programFilter, setProgramFilter] = useState("todos");
   const [semesters, setSemesters] = useState<ApiSemester[]>([]);
   const [programs, setPrograms] = useState<ApiProgram[]>([]);
+  const [activePanel, setActivePanel] = useState<"requests" | "uploads">("requests");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   // --- Estado del chatbox de ajustes ---
   // adjustmentBoxId: ID de la solicitud que tiene el chatbox abierto (null = ninguno).
@@ -30,10 +37,7 @@ export function CoordinatorRequestsSection() {
   // --- Estado del panel de aprobación ---
   // approvalBoxId: ID de la solicitud con panel de aprobación abierto.
   const [approvalBoxId, setApprovalBoxId] = useState<string | null>(null);
-  // approvalLink: link obligatorio que se guarda al confirmar aprobación.
-  const [approvalLink, setApprovalLink] = useState("");
-  // approvalError: mensaje de validación cuando se confirma sin link.
-  const [approvalError, setApprovalError] = useState("");
+  const [approvingId, setApprovingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user || (user.role !== "LMS" && user.role !== "ADMIN")) return;
@@ -42,10 +46,31 @@ export function CoordinatorRequestsSection() {
     void catalogsApi.programs().then(setPrograms).catch((error) => toast.error(readError(error)));
   }, [loadCoordinatorRequests, user]);
 
+  useEffect(() => {
+    if (!user || (user.role !== "LMS" && user.role !== "ADMIN")) return undefined;
 
-  // Aplica los tres filtros al mismo tiempo:
-  // estado, semestre y programa.
-  const filteredRequests = requests.filter((request) => {
+    const refresh = () => {
+      if (document.visibilityState === "visible") {
+        void loadCoordinatorRequests().catch(() => undefined);
+      }
+    };
+    const interval = window.setInterval(refresh, 15_000);
+    document.addEventListener("visibilitychange", refresh);
+    window.addEventListener("focus", refresh);
+
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", refresh);
+      window.removeEventListener("focus", refresh);
+    };
+  }, [loadCoordinatorRequests, user]);
+
+
+  const activeRequests = requests.filter((request) => request.status !== "aprobado");
+
+  // Aplica los tres filtros al mismo tiempo sobre la bandeja operativa:
+  // estado, semestre y programa. Las aprobadas se consultan en Historial de cargas.
+  const filteredRequests = activeRequests.filter((request) => {
     const matchesStatus =
       statusFilter === "todas" || request.status === statusFilter;
 
@@ -57,6 +82,18 @@ export function CoordinatorRequestsSection() {
 
     return matchesStatus && matchesSemester && matchesProgram;
   });
+  const hasActiveFilters = statusFilter !== "todas" || semesterFilter !== "todos" || programFilter !== "todos";
+  const totalPages = Math.max(1, Math.ceil(filteredRequests.length / pageSize));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedRequests = filteredRequests.slice((safeCurrentPage - 1) * pageSize, safeCurrentPage * pageSize);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, semesterFilter, programFilter, pageSize]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [currentPage, totalPages]);
 
 
 
@@ -85,8 +122,6 @@ export function CoordinatorRequestsSection() {
     }
     if (approvalBoxId === id) {
       setApprovalBoxId(null);
-      setApprovalLink("");
-      setApprovalError("");
     }
   }
 
@@ -97,8 +132,6 @@ export function CoordinatorRequestsSection() {
   function openAdjustmentBox(requestId: string) {
     // Si se abre "Solicitar ajustes", se cierra el panel de aprobación.
     setApprovalBoxId(null);
-    setApprovalLink("");
-    setApprovalError("");
     setAdjustmentBoxId(requestId);
     setAdjustmentNotes("");
     setAdjustmentError("");
@@ -137,23 +170,22 @@ export function CoordinatorRequestsSection() {
     setAdjustmentNotes("");
     setAdjustmentError("");
     setApprovalBoxId(requestId);
-    setApprovalLink("");
-    setApprovalError("");
   }
 
   function confirmApproval(requestId: string) {
-    const normalizedLink = approvalLink.trim();
-    if (normalizedLink === "") {
-      setApprovalError("Debes pegar un link antes de confirmar la aprobación.");
-      return;
-    }
-    void approveRequest(requestId, normalizedLink)
+    setApprovingId(requestId);
+    void approveRequest(requestId)
       .then(() => {
         setApprovalBoxId(null);
-        setApprovalLink("");
-        setApprovalError("");
       })
-      .catch((error) => toast.error(readError(error)));
+      .catch((error) => toast.error(readError(error)))
+      .finally(() => setApprovingId(null));
+  }
+
+  function clearFilters() {
+    setStatusFilter("todas");
+    setSemesterFilter("todos");
+    setProgramFilter("todos");
   }
 
   return (
@@ -169,17 +201,42 @@ export function CoordinatorRequestsSection() {
           <h2 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900">Solicitudes recibidas</h2>
           <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-slate-500">
 
-            Aquí aparecerán las solicitudes creadas por los GIF para que el coordinador pueda revisarlas, hacer seguimiento y gestionar su estado.
+            Aquí aparecerán las solicitudes activas creadas por los GIF para que el coordinador pueda revisarlas, hacer seguimiento y gestionar su estado.
 
           </p>
         </div>
 
+        <div className="mb-6 flex justify-center">
+          <div className="inline-flex rounded-full border border-slate-200 bg-white p-1 shadow-sm">
+            <button
+              type="button"
+              onClick={() => setActivePanel("requests")}
+              className={`rounded-full px-4 py-2 text-sm font-bold transition ${
+                activePanel === "requests"
+                  ? "bg-blue-600 text-white shadow"
+                  : "text-slate-600 hover:bg-slate-50"
+              }`}
+            >
+              Solicitudes
+            </button>
+            <button
+              type="button"
+              onClick={() => setActivePanel("uploads")}
+              className={`rounded-full px-4 py-2 text-sm font-bold transition ${
+                activePanel === "uploads"
+                  ? "bg-blue-600 text-white shadow"
+                  : "text-slate-600 hover:bg-slate-50"
+              }`}
+            >
+              Historial de cargas
+            </button>
+          </div>
+        </div>
+
+        {activePanel === "uploads" ? (
+          <UploadHistorySection />
+        ) : (
         <div className="space-y-5">
-          {filteredRequests.length === 0 ? (
-            <p className="text-sm text-slate-500">
-              No hay solicitudes para este filtro.
-            </p>
-          ) : (
             <div className="grid gap-4">
 
               <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -193,7 +250,7 @@ export function CoordinatorRequestsSection() {
                       Filtros de solicitudes
                     </h3>
                     <p className="text-xs text-slate-500">
-                      Filtra por estado, semestre o programa.
+                      Filtra solicitudes activas por estado, semestre o programa.
                     </p>
                   </div>
 
@@ -212,74 +269,82 @@ export function CoordinatorRequestsSection() {
                 {showFilters && (
                   <div className="mt-5 grid gap-4 md:grid-cols-3">
                     <div>
-                      <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-400">
-                        Estado
-                      </label>
-
-                      <select
+                      <FilterCombobox
+                        label="Estado"
                         value={statusFilter}
-                        onChange={(event) =>
-                          setStatusFilter(event.target.value as RequestStatus | "todas")
-                        }
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-slate-400 focus:bg-white"
-                      >
-                        <option value="todas">Todas</option>
-                        <option value="pendiente">PENDIENTE</option>
-                        <option value="aprobado">APROBADO</option>
-                        <option value="requiere_ajustes">REQUIERE AJUSTES</option>
-                      </select>
+                        onChange={setStatusFilter}
+                        options={[
+                          { value: "todas", label: "Todas" },
+                          { value: "pendiente", label: "Pendiente" },
+                          { value: "requiere_ajustes", label: "Requiere ajustes" },
+                        ]}
+                      />
                     </div>
 
                     <div>
-                      <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-400">
-                        Semestre
-                      </label>
-
-                      <select
+                      <FilterCombobox
+                        label="Semestre"
                         value={semesterFilter}
-                        onChange={(event) => setSemesterFilter(event.target.value)}
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-slate-400 focus:bg-white"
-                      >
-                        <option value="todos">Todos</option>
-                        {semesters.map((item) => (
-                          <option key={item.code} value={item.code}>
-                            {item.name}
-                          </option>
-                        ))}
-                      </select>
+                        onChange={setSemesterFilter}
+                        options={[
+                          { value: "todos", label: "Todos" },
+                          ...semesters.map((item) => ({ value: item.code, label: item.name })),
+                        ]}
+                      />
                     </div>
 
                     <div>
-                      <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-400">
-                        Programa
-                      </label>
-
-                      <select
+                      <FilterCombobox
+                        label="Programa"
                         value={programFilter}
-                        onChange={(event) => setProgramFilter(event.target.value)}
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-slate-400 focus:bg-white"
-                      >
-                        <option value="todos">Todos</option>
-                        {programs.map((item) => (
-                          <option key={item.code} value={item.name}>
-                            {item.name}
-                          </option>
-                        ))}
-                      </select>
+                        onChange={setProgramFilter}
+                        options={[
+                          { value: "todos", label: "Todos" },
+                          ...programs.map((item) => ({ value: item.name, label: item.name })),
+                        ]}
+                      />
                     </div>
                   </div>
                 )}
               </div>
               <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
-            <div className="mb-6">
+                <div className="mb-6">
                   <h2 className="text-lg font-semibold text-slate-800">
-                    Solicitudes recibidas
+                    Solicitudes activas
                   </h2>
                   <p className="text-sm text-slate-500">
-                    Revisa, valida y gestiona las solicitudes enviadas por los GIF.
+                    Revisa pendientes y solicitudes que requieren ajustes. Las aprobadas quedan en Historial de cargas.
                   </p>
                 </div>
-                {filteredRequests.map((request) => {
+                {filteredRequests.length > 0 && (
+                  <PaginationControls
+                    currentPage={safeCurrentPage}
+                    pageSize={pageSize}
+                    totalItems={filteredRequests.length}
+                    onPageChange={setCurrentPage}
+                    onPageSizeChange={setPageSize}
+                  />
+                )}
+                {filteredRequests.length === 0 ? (
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-8 text-center">
+                    <p className="text-sm font-semibold text-slate-700">
+                      No hay solicitudes activas para los filtros seleccionados.
+                    </p>
+                    <p className="mx-auto mt-1 max-w-md text-xs leading-relaxed text-slate-500">
+                      Los filtros siguen activos para que puedas ajustar la busqueda sin perder el contexto.
+                    </p>
+                    {hasActiveFilters && (
+                      <button
+                        type="button"
+                        onClick={clearFilters}
+                        className="mt-4 rounded-full bg-blue-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700 active:scale-95"
+                      >
+                        Limpiar filtros
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                paginatedRequests.map((request) => {
                   const isExpanded = expandedId === request.id;
                   return (
                     <article
@@ -372,22 +437,6 @@ export function CoordinatorRequestsSection() {
                           <div className="grid gap-3 md:grid-cols-2">
                             <div className="rounded-xl bg-white p-4 ring-1 ring-slate-200">
                               <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                                Drive
-                              </p>
-
-                              <a
-                                href={request.source}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="mt-2 inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
-                              >
-                                Ver enlace
-                                <span aria-hidden="true">↗</span>
-                              </a>
-                            </div>
-
-                            <div className="rounded-xl bg-white p-4 ring-1 ring-slate-200">
-                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                                 Creación
                               </p>
 
@@ -414,23 +463,7 @@ export function CoordinatorRequestsSection() {
                               <ContentTypePills items={request.contentTypes} />
                             </div>
 
-                            {request.approvalLink && (
-                              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 md:col-span-2">
-                                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600">
-                                  Link de aprobación
-                                </p>
-
-                                <a
-                                  href={request.approvalLink}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="mt-2 inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-200"
-                                >
-                                  Abrir link aprobado
-                                  <span aria-hidden="true">↗</span>
-                                </a>
-                              </div>
-                            )}
+                            <MegaFilesPanel subjectId={request.id} />
 
                             {request.adjustmentNotes && (
                               <div className="rounded-xl border border-orange-200 bg-orange-50 p-4 md:col-span-2">
@@ -523,44 +556,30 @@ export function CoordinatorRequestsSection() {
                             </div>
                           )}
 
-                          {/* --- PANEL DE APROBACIÓN ---
-                                Se muestra al hacer clic en "Aprobar".
-                                Requiere link antes de confirmar. */}
+                          {/* --- PANEL DE APROBACIÓN --- */}
                           {approvalBoxId === request.id && (
                             <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4">
+                              {approvingId === request.id && (
+                                <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-emerald-100">
+                                  <div className="h-full w-1/2 animate-pulse rounded-full bg-emerald-600" />
+                                </div>
+                              )}
                               <p className="mb-2 text-sm font-semibold text-emerald-800">
-                                Confirmar aprobación
+                                {approvingId === request.id ? "Confirmando aprobación" : "Confirmar aprobación"}
                               </p>
                               <p className="mb-3 text-xs text-emerald-700">
-                                Pega el link final para aprobar esta solicitud.
+                                {approvingId === request.id
+                                  ? "Confirmando aprobación de la solicitud."
+                                  : "El material ya fue transferido a MEGA. Confirma si la revisión es satisfactoria."}
                               </p>
-
-                              <input
-                                type="url"
-                                value={approvalLink}
-                                onChange={(event) => {
-                                  setApprovalLink(event.target.value);
-                                  if (approvalError) setApprovalError("");
-                                }}
-                                placeholder="https://..."
-                                className="w-full rounded-xl border border-emerald-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-300/40"
-                                required
-                              />
-
-                              {approvalError && (
-                                <p className="mt-2 text-xs font-medium text-red-600">
-                                  {approvalError}
-                                </p>
-                              )}
 
                               <div className="mt-3 flex justify-end gap-2">
                                 <button
                                   type="button"
                                   onClick={() => {
                                     setApprovalBoxId(null);
-                                    setApprovalLink("");
-                                    setApprovalError("");
                                   }}
+                                  disabled={approvingId === request.id}
                                   className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
                                 >
                                   Cancelar
@@ -568,9 +587,10 @@ export function CoordinatorRequestsSection() {
                                 <button
                                   type="button"
                                   onClick={() => confirmApproval(request.id)}
-                                  className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 active:scale-95"
+                                  disabled={approvingId === request.id}
+                                  className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 active:scale-95 disabled:cursor-wait disabled:bg-emerald-400"
                                 >
-                                  Confirmar aprobación
+                                  {approvingId === request.id ? "Procesando..." : "Confirmar aprobación"}
                                 </button>
                               </div>
                             </div>
@@ -581,14 +601,23 @@ export function CoordinatorRequestsSection() {
 
                   );
 
-                })}
+                })
+                )}
+                {filteredRequests.length > pageSize && (
+                  <PaginationControls
+                    currentPage={safeCurrentPage}
+                    pageSize={pageSize}
+                    totalItems={filteredRequests.length}
+                    onPageChange={setCurrentPage}
+                    onPageSizeChange={setPageSize}
+                  />
+                )}
               </div>
 
             </div>
 
-          )}
-
         </div>
+        )}
 
       </div>
 

@@ -133,7 +133,7 @@ export function TopNavigation({ variant = "solid" }: { variant?: TopNavigationVa
             )}
           >
             <LogOut className="h-3.5 w-3.5" />
-            <span className="max-sm:hidden">Salir sesión</span>
+            <span className="max-sm:hidden">Cerrar sesión</span>
           </motion.button>
 
           <motion.div

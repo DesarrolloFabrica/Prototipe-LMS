@@ -6,11 +6,13 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { RevealOnScroll } from "@/components/common/RevealOnScroll";
 import { ContentTypePills } from "@/components/shared/ContentTypePills";
+import { MegaFilesPanel } from "@/components/shared/MegaFilesPanel";
+import { PaginationControls } from "@/components/shared/PaginationControls";
 import { Button } from "@/components/ui/Button";
+import { FilterCombobox } from "@/components/ui/FilterCombobox";
 import { Input } from "@/components/ui/Input";
-import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
-import { catalogsApi } from "@/lib/api";
+import { catalogsApi, materiasApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import { useRequestsStore } from "@/store/requestsStore";
 import type { AcademicLevel, ApiContentType, ApiProgram, ApiSemester, ContentTypeCode, RequestStatus } from "@/types";
@@ -37,10 +39,11 @@ export function DriveSubmissionSection() {
     // Accion para que Fabrica notifique que corrigio una solicitud con ajustes.
     const notifyCorrectionsReady = useRequestsStore((state) => state.notifyCorrectionsReady);
     const user = useAuthStore((state) => state.user);
-    const { register, handleSubmit, reset } = useForm<SubmissionForm>({
+    const { register, handleSubmit, reset, setValue, watch } = useForm<SubmissionForm>({
         resolver: zodResolver(schema),
         defaultValues: { contentTypeCodes: [] },
     });
+    const selectedLevel = watch("level");
     const [semester, setSemester] = useState("");
     const [program, setProgram] = useState("");
     const [contentTypes, setContentTypes] = useState<ApiContentType[]>([]);
@@ -51,6 +54,12 @@ export function DriveSubmissionSection() {
     const [statusFilter, setStatusFilter] = useState<GifStatusFilter>("todas");
     const [semesterFilter, setSemesterFilter] = useState("todos");
     const [programFilter, setProgramFilter] = useState("todos");
+    const [transferPercent, setTransferPercent] = useState(0);
+    const [transferCurrentFile, setTransferCurrentFile] = useState("");
+    const [transferDetails, setTransferDetails] = useState("");
+    const [isTransferActive, setIsTransferActive] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
 
     // Estilos visuales por estado (misma paleta que el panel de coordinador).
     // "requiere_ajustes" usa naranja porque representa ajustes pendientes, no un rechazo definitivo.
@@ -84,6 +93,9 @@ export function DriveSubmissionSection() {
 
         return matchesStatus && matchesSemester && matchesProgram;
     });
+    const totalPages = Math.max(1, Math.ceil(filteredRequests.length / pageSize));
+    const safeCurrentPage = Math.min(currentPage, totalPages);
+    const paginatedRequests = filteredRequests.slice((safeCurrentPage - 1) * pageSize, safeCurrentPage * pageSize);
 
     useEffect(() => {
         if (!user || user.role !== "FABRICA") return;
@@ -97,12 +109,56 @@ export function DriveSubmissionSection() {
         void loadMyRequests().catch((error) => toast.error(readError(error)));
     }, [loadMyRequests, user]);
 
+    useEffect(() => {
+        if (!user || user.role !== "FABRICA") return undefined;
+
+        const refresh = () => {
+            if (document.visibilityState === "visible" && !isLoading) {
+                void loadMyRequests().catch(() => undefined);
+            }
+        };
+        const interval = window.setInterval(refresh, 15_000);
+        document.addEventListener("visibilitychange", refresh);
+        window.addEventListener("focus", refresh);
+
+        return () => {
+            window.clearInterval(interval);
+            document.removeEventListener("visibilitychange", refresh);
+            window.removeEventListener("focus", refresh);
+        };
+    }, [isLoading, loadMyRequests, user]);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [statusFilter, semesterFilter, programFilter, pageSize]);
+
+    useEffect(() => {
+        if (currentPage > totalPages) setCurrentPage(totalPages);
+    }, [currentPage, totalPages]);
+
     const onSubmit = async (data: SubmissionForm) => {
         /**
          * Persistimos en Zustand para compartir la data con la vista de Coordinador
          * y también reutilizarla en "Mis solicitudes".
          */
+        let poll: number | undefined;
         try {
+        if (!semester || !program) {
+            toast.error("Selecciona semestre y programa antes de enviar.");
+            return;
+        }
+        const transferId = crypto.randomUUID();
+        setIsTransferActive(true);
+        setTransferPercent(1);
+        setTransferCurrentFile("Preparando transferencia...");
+        poll = window.setInterval(() => {
+            void materiasApi.transferProgress(transferId).then((progress) => {
+                setTransferPercent(progress.percent);
+                setTransferCurrentFile(progress.currentFile ?? statusText(progress.status));
+                setTransferDetails(progressDetails(progress));
+            }).catch(() => undefined);
+        }, 900);
+
         await createRequest({
             subject: data.subject,
             level: data.level as AcademicLevel,
@@ -111,7 +167,12 @@ export function DriveSubmissionSection() {
             semester,
             program,
             contentTypeCodes: data.contentTypeCodes as ContentTypeCode[],
+            transferId,
         });
+        window.clearInterval(poll);
+        setTransferPercent(100);
+        setTransferCurrentFile("Transferencia completada");
+        setTransferDetails("");
         toast.success("Solicitud enviada");
         reset({ subject: "", level: "", source: "", summary: "", contentTypeCodes: [] });
         setSemester("");
@@ -119,6 +180,14 @@ export function DriveSubmissionSection() {
         setView("list");
         } catch (error) {
             toast.error(readError(error));
+        } finally {
+            if (poll) window.clearInterval(poll);
+            window.setTimeout(() => {
+                setIsTransferActive(false);
+                setTransferPercent(0);
+                setTransferCurrentFile("");
+                setTransferDetails("");
+            }, 1200);
         }
     };
 
@@ -161,6 +230,30 @@ export function DriveSubmissionSection() {
                         className="mx-auto mt-10 w-full max-w-4xl px-4"
                     >
                         <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                            {isTransferActive && (
+                              <div className="mb-5 rounded-2xl border border-blue-200 bg-blue-50 p-4">
+                                <div className="mb-3 h-2 overflow-hidden rounded-full bg-blue-100">
+                                  <div
+                                    className="h-full rounded-full bg-blue-600 transition-all duration-500"
+                                    style={{ width: `${Math.max(transferPercent, 1)}%` }}
+                                  />
+                                </div>
+                                <div className="flex items-center justify-between gap-3">
+                                  <p className="text-sm font-semibold text-blue-900">
+                                    Transfiriendo archivos de Drive a MEGA
+                                  </p>
+                                  <span className="text-sm font-bold text-blue-900">{Math.round(transferPercent)}%</span>
+                                </div>
+                                <p className="mt-1 truncate text-xs text-blue-700">
+                                  {transferCurrentFile || "La solicitud se enviará cuando el material quede listo para revisión."}
+                                </p>
+                                {transferDetails && (
+                                  <p className="mt-1 text-xs font-medium text-blue-800">
+                                    {transferDetails}
+                                  </p>
+                                )}
+                              </div>
+                            )}
                             {/* Campo de materia */}
                             {/* Fila inicial: materia y nivel/tipo */}
                             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -179,63 +272,41 @@ export function DriveSubmissionSection() {
 
                                 {/* Campo de nivel o tipo */}
                                 <div>
-                                    <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-slate-600">
-                                        Nivel / Tipo
-                                    </label>
-
-                                    <Select
-                                        className="h-12 border-slate-200 bg-slate-50 text-slate-700 shadow-none transition-colors focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
-                                        {...register("level")}
-                                    >
-                                        <option value="">Seleccione...</option>
-                                        {academicLevels.map((level) => (
-                                          <option key={level} value={level}>
-                                            {labelForContentType(level)}
-                                          </option>
-                                        ))}
-                                    </Select>
+                                    <FilterCombobox
+                                        label="Nivel / Tipo"
+                                        value={selectedLevel || ""}
+                                        onChange={(nextLevel) => setValue("level", nextLevel, { shouldDirty: true, shouldValidate: true })}
+                                        options={[
+                                            { value: "", label: "Seleccione..." },
+                                            ...academicLevels.map((level) => ({ value: level, label: labelForContentType(level) })),
+                                        ]}
+                                    />
                                 </div>
                             </div>
                             <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
                                 <div>
-                                    <label className="mb-2 block text-sm font-semibold text-slate-700">
-                                        Semestre
-                                    </label>
-
-                                    <select
+                                    <FilterCombobox
+                                        label="Semestre"
                                         value={semester}
-                                        onChange={(event) => setSemester(event.target.value)}
-                                        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-blue-400"
-                                        required
-                                    >
-                                        <option value="">Selecciona un semestre</option>
-                                        {semesters.map((item) => (
-                                            <option key={item.code} value={item.code}>
-                                                {item.name}
-                                            </option>
-                                        ))}
-                                    </select>
+                                        onChange={setSemester}
+                                        options={[
+                                            { value: "", label: "Selecciona un semestre" },
+                                            ...semesters.map((item) => ({ value: item.code, label: item.name })),
+                                        ]}
+                                    />
                                 </div>
 
                                 {/* Campo para seleccionar programa */}
                                 <div>
-                                    <label className="mb-2 block text-sm font-semibold text-slate-700">
-                                        Programa
-                                    </label>
-
-                                    <select
+                                    <FilterCombobox
+                                        label="Programa"
                                         value={program}
-                                        onChange={(event) => setProgram(event.target.value)}
-                                        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-blue-400"
-                                        required
-                                    >
-                                        <option value="">Selecciona un programa</option>
-                                        {programs.map((item) => (
-                                            <option key={item.code} value={item.name}>
-                                                {item.name}
-                                            </option>
-                                        ))}
-                                    </select>
+                                        onChange={setProgram}
+                                        options={[
+                                            { value: "", label: "Selecciona un programa" },
+                                            ...programs.map((item) => ({ value: item.name, label: item.name })),
+                                        ]}
+                                    />
                                 </div>
                             </div>
 
@@ -289,7 +360,7 @@ export function DriveSubmissionSection() {
                     </h2>
 
                     <p className="mt-2 max-w-md text-sm text-blue-800/70">
-                                            Confirma que el resumen y el enlace son correctos. Tras enviar, el proceso entra en pipeline automatizado como{" "}
+                                            Confirma que el resumen y el enlace son correctos. Al enviar, el sistema copiará el material a MEGA y lo dejará listo como{" "}
                                             <span className="font-semibold text-blue-900">Pendiente</span>.
                     </p>
                   </div>
@@ -300,7 +371,7 @@ export function DriveSubmissionSection() {
                     className="group relative overflow-hidden rounded-2xl bg-blue-600 px-8 py-4 font-semibold text-white shadow-[0_0_20px_rgb(37,99,235,0.3)] transition-all hover:-translate-y-0.5 hover:shadow-[0_0_25px_rgb(37,99,235,0.5)]"
                   >
                     <span className="relative z-10 flex items-center gap-2">
-                      {isLoading ? "Enviando..." : "Enviar solicitud"}
+                      {isTransferActive ? "Preparando link MEGA..." : "Enviar solicitud"}
                       <Send className="h-4 w-4 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" />
                     </span>
 
@@ -352,55 +423,41 @@ export function DriveSubmissionSection() {
                                     {showFilters && (
                                         <div className="mt-5 grid gap-4 md:grid-cols-3">
                                             <div>
-                                                <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-400">
-                                                    Estado
-                                                </label>
-                                                <select
+                                                <FilterCombobox
+                                                    label="Estado"
                                                     value={statusFilter}
-                                                    onChange={(event) => setStatusFilter(event.target.value as GifStatusFilter)}
-                                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-slate-400 focus:bg-white"
-                                                >
-                                                    <option value="todas">Todas</option>
-                                                    <option value="pendiente">Pendiente</option>
-                                                    <option value="aprobado">Aprobada</option>
-                                                    <option value="requiere_ajustes">Requiere ajustes</option>
-                                                </select>
+                                                    onChange={setStatusFilter}
+                                                    options={[
+                                                        { value: "todas", label: "Todas" },
+                                                        { value: "pendiente", label: "Pendiente" },
+                                                        { value: "aprobado", label: "Aprobada" },
+                                                        { value: "requiere_ajustes", label: "Requiere ajustes" },
+                                                    ]}
+                                                />
                                             </div>
 
                                             <div>
-                                                <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-400">
-                                                    Semestre
-                                                </label>
-                                                <select
+                                                <FilterCombobox
+                                                    label="Semestre"
                                                     value={semesterFilter}
-                                                    onChange={(event) => setSemesterFilter(event.target.value)}
-                                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-slate-400 focus:bg-white"
-                                                >
-                                                    <option value="todos">Todos</option>
-                                                    {semesterOptions.map((semesterValue) => (
-                                                        <option key={semesterValue} value={semesterValue}>
-                                                            {semesterValue}
-                                                        </option>
-                                                    ))}
-                                                </select>
+                                                    onChange={setSemesterFilter}
+                                                    options={[
+                                                        { value: "todos", label: "Todos" },
+                                                        ...semesterOptions.map((semesterValue) => ({ value: semesterValue, label: semesterValue })),
+                                                    ]}
+                                                />
                                             </div>
 
                                             <div>
-                                                <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-400">
-                                                    Programa
-                                                </label>
-                                                <select
+                                                <FilterCombobox
+                                                    label="Programa"
                                                     value={programFilter}
-                                                    onChange={(event) => setProgramFilter(event.target.value)}
-                                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-slate-400 focus:bg-white"
-                                                >
-                                                    <option value="todos">Todos</option>
-                                                    {programOptions.map((programValue) => (
-                                                        <option key={programValue} value={programValue}>
-                                                            {programValue}
-                                                        </option>
-                                                    ))}
-                                                </select>
+                                                    onChange={setProgramFilter}
+                                                    options={[
+                                                        { value: "todos", label: "Todos" },
+                                                        ...programOptions.map((programValue) => ({ value: programValue, label: programValue })),
+                                                    ]}
+                                                />
                                             </div>
                                         </div>
                                     )}
@@ -417,7 +474,14 @@ export function DriveSubmissionSection() {
                                     </div>
                                 ) : (
                                     <div className="grid gap-3">
-                                {filteredRequests.map((request) => {
+                                        <PaginationControls
+                                            currentPage={safeCurrentPage}
+                                            pageSize={pageSize}
+                                            totalItems={filteredRequests.length}
+                                            onPageChange={setCurrentPage}
+                                            onPageSizeChange={setPageSize}
+                                        />
+                                {paginatedRequests.map((request) => {
                                     const isExpanded = expandedRequestId === request.id;
                                     return (
                                         <article
@@ -490,21 +554,6 @@ export function DriveSubmissionSection() {
                                                     <div className="grid gap-3 md:grid-cols-2">
                                                         <div className="rounded-xl bg-white p-4 ring-1 ring-slate-200">
                                                             <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                                                                Drive
-                                                            </p>
-                                                            <a
-                                                                href={request.source}
-                                                                target="_blank"
-                                                                rel="noreferrer"
-                                                                className="mt-2 inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
-                                                            >
-                                                                Ver enlace
-                                                                <span aria-hidden="true">↗</span>
-                                                            </a>
-                                                        </div>
-
-                                                        <div className="rounded-xl bg-white p-4 ring-1 ring-slate-200">
-                                                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                                                                 Creación
                                                             </p>
                                                             <p className="mt-2 text-sm font-medium text-slate-700">
@@ -527,6 +576,8 @@ export function DriveSubmissionSection() {
                                                         <div className="rounded-xl bg-white p-4 ring-1 ring-slate-200 md:col-span-2">
                                                             <ContentTypePills items={request.contentTypes} />
                                                         </div>
+
+                                                        <MegaFilesPanel subjectId={request.id} />
                                                     </div>
 
                                                     {/* Bloque de observaciones del coordinador:
@@ -561,27 +612,20 @@ export function DriveSubmissionSection() {
                                                         </div>
                                                     )}
 
-                                                    {request.status === "aprobado" && request.approvalLink && (
-                                                        <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4">
-                                                            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-emerald-700">
-                                                                Link de aprobación
-                                                            </p>
-                                                            <a
-                                                                href={request.approvalLink}
-                                                                target="_blank"
-                                                                rel="noreferrer"
-                                                                className="mt-2 inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-200"
-                                                            >
-                                                                Abrir link aprobado
-                                                                <span aria-hidden="true">↗</span>
-                                                            </a>
-                                                        </div>
-                                                    )}
                                                 </div>
                                             </div>
                                         </article>
                                     );
                                 })}
+                                        {filteredRequests.length > pageSize && (
+                                            <PaginationControls
+                                                currentPage={safeCurrentPage}
+                                                pageSize={pageSize}
+                                                totalItems={filteredRequests.length}
+                                                onPageChange={setCurrentPage}
+                                                onPageSizeChange={setPageSize}
+                                            />
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -613,5 +657,42 @@ function labelForContentType(code: string) {
 
 function readError(error: unknown) {
   return error instanceof Error ? error.message : "No fue posible conectar con el backend.";
+}
+
+function statusText(status: string) {
+    if (status === "listing") return "Leyendo carpeta de Drive...";
+    if (status === "uploading") return "Subiendo archivos a MEGA...";
+    if (status === "completed") return "Transferencia completada";
+    if (status === "failed") return "La transferencia falló";
+    return "Preparando transferencia...";
+}
+
+function progressDetails(progress: {
+    totalFiles: number;
+    completedFiles: number;
+    totalBytes: number;
+    transferredBytes: number;
+}) {
+    const files = progress.totalFiles > 0
+        ? `${progress.completedFiles}/${progress.totalFiles} archivo(s)`
+        : "";
+    const bytes = progress.totalBytes > 0
+        ? `${formatBytes(progress.transferredBytes)} / ${formatBytes(progress.totalBytes)}`
+        : "";
+
+    return [files, bytes].filter(Boolean).join(" · ");
+}
+
+function formatBytes(value: number) {
+    if (!Number.isFinite(value) || value <= 0) return "0 B";
+    const units = ["B", "KB", "MB", "GB", "TB"];
+    let size = value;
+    let unitIndex = 0;
+    while (size >= 1024 && unitIndex < units.length - 1) {
+        size /= 1024;
+        unitIndex += 1;
+    }
+
+    return `${size >= 10 || unitIndex === 0 ? size.toFixed(0) : size.toFixed(1)} ${units[unitIndex]}`;
 }
 
