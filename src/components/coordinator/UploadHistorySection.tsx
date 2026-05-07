@@ -1,11 +1,27 @@
 import { useEffect, useMemo, useState } from "react";
-import { Archive, Clock, Database, FolderTree, HardDrive, Search, UploadCloud, type LucideIcon } from "lucide-react";
+import {
+  Archive,
+  Bell,
+  CheckCircle2,
+  Clock,
+  Download,
+  Edit3,
+  FolderTree,
+  HardDrive,
+  History,
+  MessageSquare,
+  RefreshCcw,
+  Search,
+  UploadCloud,
+  User,
+  type LucideIcon,
+} from "lucide-react";
 import { toast } from "sonner";
 import { MegaFilesPanel } from "@/components/shared/MegaFilesPanel";
 import { PaginationControls } from "@/components/shared/PaginationControls";
 import { FilterCombobox } from "@/components/ui/FilterCombobox";
 import { materiasApi } from "@/lib/api";
-import type { ApiUploadHistoryItem, SubjectStatus } from "@/types";
+import type { ApiSubjectTimelineEvent, ApiUploadHistoryItem, SubjectStatus } from "@/types";
 
 const statusLabels: Record<SubjectStatus, string> = {
   pendiente: "Pendiente",
@@ -200,7 +216,7 @@ export function UploadHistorySection() {
                         <span>{item.lastUploadedAt ? formatDate(item.lastUploadedAt) : "Sin transferencia"}</span>
                       </p>
                       <p className="flex items-center gap-2 text-slate-500">
-                        <Database className="h-4 w-4" />
+                        <User className="h-4 w-4" />
                         <span className="truncate">{item.createdBy?.fullName ?? item.createdBy?.email ?? "Sin responsable"}</span>
                       </p>
                     </div>
@@ -224,8 +240,9 @@ export function UploadHistorySection() {
                   )}
 
                   {isExpanded && (
-                    <div className="border-t border-slate-100 bg-slate-50/70 p-4">
+                    <div className="grid gap-4 border-t border-slate-100 bg-slate-50/70 p-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)]">
                       <MegaFilesPanel subjectId={String(item.subjectId)} />
+                      <SubjectTimelinePanel subjectId={item.subjectId} />
                     </div>
                   )}
                 </article>
@@ -245,6 +262,99 @@ export function UploadHistorySection() {
         )}
       </div>
     </div>
+  );
+}
+
+function SubjectTimelinePanel({ subjectId }: { subjectId: number }) {
+  const [events, setEvents] = useState<ApiSubjectTimelineEvent[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setIsLoading(true);
+    setError(null);
+    void materiasApi
+      .timeline(subjectId)
+      .then(setEvents)
+      .catch((timelineError) =>
+        setError(timelineError instanceof Error ? timelineError.message : "No fue posible cargar la traza."),
+      )
+      .finally(() => setIsLoading(false));
+  }, [subjectId]);
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Trazabilidad</p>
+          <h4 className="mt-1 text-sm font-extrabold text-slate-900">Historial completo del flujo</h4>
+        </div>
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-50 px-2.5 py-1 text-xs font-bold text-slate-600 ring-1 ring-slate-200">
+          <History className="h-3.5 w-3.5" />
+          {events.length}
+        </span>
+      </div>
+
+      {isLoading && <p className="mt-4 text-sm text-slate-500">Cargando traza...</p>}
+      {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+      {!isLoading && !error && events.length === 0 && (
+        <p className="mt-4 rounded-lg bg-slate-50 p-4 text-sm text-slate-500">Todavia no hay eventos para esta solicitud.</p>
+      )}
+
+      {events.length > 0 && (
+        <div className="mt-4 max-h-[28rem] space-y-3 overflow-auto py-1 pl-2 pr-2">
+          {events.map((event, index) => {
+            const Icon = timelineIcon(event.type);
+            return (
+              <div key={event.id} className="relative flex gap-3 pl-1">
+                {index < events.length - 1 && <span className="absolute left-[1.4rem] top-9 h-[calc(100%-1rem)] w-px bg-slate-200" />}
+                <span className={`relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${timelineIconClass(event.type)}`}>
+                  <Icon className="h-4 w-4" />
+                </span>
+                <div className="min-w-0 flex-1 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <p className="text-sm font-extrabold text-slate-800">{event.title}</p>
+                    <time className="text-[11px] font-semibold text-slate-400">{formatDate(event.createdAt)}</time>
+                  </div>
+                  {event.description && <p className="mt-1 text-xs leading-relaxed text-slate-600">{event.description}</p>}
+                  <p className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                    {event.actor?.fullName ?? event.actor?.email ?? "Sistema"}
+                  </p>
+                  <TimelineMetadata event={event} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TimelineMetadata({ event }: { event: ApiSubjectTimelineEvent }) {
+  const metadata = event.metadata ?? {};
+  const fileName = typeof metadata.fileName === "string" ? metadata.fileName : null;
+  const recipientEmail = typeof metadata.recipientEmail === "string" ? metadata.recipientEmail : null;
+  const fileCount = typeof metadata.fileCount === "number" ? metadata.fileCount : null;
+  const totalBytes = typeof metadata.totalBytes === "number" ? metadata.totalBytes : null;
+
+  if (!fileName && !recipientEmail && fileCount === null && totalBytes === null) return null;
+
+  return (
+    <div className="mt-2 flex flex-wrap gap-1.5">
+      {fileName && <MetaPill value={fileName} />}
+      {recipientEmail && <MetaPill value={recipientEmail} />}
+      {fileCount !== null && <MetaPill value={`${fileCount} archivo(s)`} />}
+      {totalBytes !== null && <MetaPill value={formatBytes(totalBytes)} />}
+    </div>
+  );
+}
+
+function MetaPill({ value }: { value: string }) {
+  return (
+    <span className="max-w-full truncate rounded-full bg-white px-2 py-1 text-[11px] font-semibold text-slate-500 ring-1 ring-slate-200">
+      {value}
+    </span>
   );
 }
 
@@ -286,6 +396,28 @@ function formatDate(value: string) {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
+}
+
+function timelineIcon(type: string): LucideIcon {
+  if (type === "SUBJECT_CREATED") return UploadCloud;
+  if (type === "TRANSFER_COMPLETED") return FolderTree;
+  if (type === "STATUS_CHANGED") return RefreshCcw;
+  if (type === "COMMENT_ADDED") return MessageSquare;
+  if (type === "NOTIFICATION") return Bell;
+  if (type === "DATA_UPDATED") return Edit3;
+  if (type === "DOWNLOAD_FILE" || type === "DOWNLOAD_ZIP") return Download;
+  return CheckCircle2;
+}
+
+function timelineIconClass(type: string) {
+  if (type === "SUBJECT_CREATED") return "bg-blue-50 text-blue-700 ring-1 ring-blue-200";
+  if (type === "TRANSFER_COMPLETED") return "bg-sky-50 text-sky-700 ring-1 ring-sky-200";
+  if (type === "STATUS_CHANGED") return "bg-violet-50 text-violet-700 ring-1 ring-violet-200";
+  if (type === "COMMENT_ADDED") return "bg-orange-50 text-orange-700 ring-1 ring-orange-200";
+  if (type === "NOTIFICATION") return "bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200";
+  if (type === "DATA_UPDATED") return "bg-slate-100 text-slate-700 ring-1 ring-slate-200";
+  if (type === "DOWNLOAD_FILE" || type === "DOWNLOAD_ZIP") return "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200";
+  return "bg-slate-50 text-slate-600 ring-1 ring-slate-200";
 }
 
 function readError(error: unknown) {

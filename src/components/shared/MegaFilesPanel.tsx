@@ -6,6 +6,7 @@ import type { ApiSubjectTransferFile } from "@/types";
 
 type MegaFilesPanelProps = {
   subjectId: string;
+  className?: string;
 };
 
 type FolderNode = {
@@ -13,7 +14,7 @@ type FolderNode = {
   files: ApiSubjectTransferFile[];
 };
 
-export function MegaFilesPanel({ subjectId }: MegaFilesPanelProps) {
+export function MegaFilesPanel({ subjectId, className = "" }: MegaFilesPanelProps) {
   const [files, setFiles] = useState<ApiSubjectTransferFile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,7 +55,7 @@ export function MegaFilesPanel({ subjectId }: MegaFilesPanelProps) {
   }, [numericSubjectId]);
 
   return (
-    <div className="rounded-xl border border-sky-200 bg-sky-50 p-4 md:col-span-2">
+    <div className={`rounded-xl border border-sky-200 bg-sky-50 p-4 ${className}`}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs font-semibold uppercase tracking-wide text-sky-700">Archivos MEGA</p>
         <div className="flex flex-wrap items-center gap-2">

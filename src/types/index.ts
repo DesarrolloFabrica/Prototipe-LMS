@@ -200,6 +200,25 @@ export interface ApiUploadHistoryItem {
   hasFiles: boolean;
 }
 
+export interface ApiSubjectTimelineEvent {
+  id: string;
+  type:
+    | "SUBJECT_CREATED"
+    | "TRANSFER_COMPLETED"
+    | "STATUS_CHANGED"
+    | "COMMENT_ADDED"
+    | "NOTIFICATION"
+    | "DATA_UPDATED"
+    | "DOWNLOAD_FILE"
+    | "DOWNLOAD_ZIP"
+    | string;
+  title: string;
+  description?: string | null;
+  actor?: Pick<ApiUser, "id" | "email" | "fullName" | "role"> | null;
+  createdAt: string;
+  metadata?: Record<string, unknown> | null;
+}
+
 export interface UpdateSubjectStatusPayload {
   newStatus: SubjectStatus;
   observation?: string;
