@@ -89,14 +89,9 @@ export function ReviewDetailPage() {
               <span className="text-slate-500">Codigo:</span>{" "}
               <span className="font-mono text-slate-800">{requestCode(item)}</span>
             </p>
-            <a
-              className="mt-4 inline-flex text-sm font-medium text-blue-600 transition hover:text-blue-700"
-              href={item.source}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Material adjunto
-            </a>
+            <p className="mt-4 rounded-xl bg-slate-50 px-3 py-2 text-sm font-medium text-slate-600 ring-1 ring-slate-100">
+              Solicitud disponible dentro de la plataforma.
+            </p>
           </Card>
         </RevealOnScroll>
       </div>
