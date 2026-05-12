@@ -17,6 +17,7 @@ export function ReviewDetailPage() {
   const { id } = useParams();
   const [item, setItem] = useState<LmsRequest | null>(null);
   const [hasLoaded, setHasLoaded] = useState(false);
+  const [isApproving, setIsApproving] = useState(false);
 
   useEffect(() => {
     const numericId = Number(id);
@@ -31,6 +32,21 @@ export function ReviewDetailPage() {
       .catch((error) => toast.error(readError(error)))
       .finally(() => setHasLoaded(true));
   }, [id]);
+
+  function approveCurrentRequest() {
+    const numericId = Number(id);
+    if (!Number.isInteger(numericId) || numericId <= 0) return;
+
+    setIsApproving(true);
+    void materiasApi
+      .updateStatus(numericId, { newStatus: "aprobado" })
+      .then((subject) => {
+        setItem(subjectToRequest(subject));
+        toast.success("Solicitud aprobada");
+      })
+      .catch((error) => toast.error(readError(error)))
+      .finally(() => setIsApproving(false));
+  }
 
   if (hasLoaded && !item) {
     return (
@@ -69,9 +85,21 @@ export function ReviewDetailPage() {
                 <TimelineItem title="Observacion de ajustes registrada" date={formatRequestDateLabel(item.createdAt)} />
               ) : null}
             </div>
-            <motion.div className="mt-6" whileTap={scaleTap}>
-              <Button className="px-6">Continuar / Finalizar</Button>
-            </motion.div>
+            <div className="mt-6">
+              {item.status === "pendiente" ? (
+                <motion.div whileTap={scaleTap}>
+                  <Button className="px-6" disabled={isApproving} onClick={approveCurrentRequest}>
+                    {isApproving ? "Aprobando..." : "Aprobar solicitud"}
+                  </Button>
+                </motion.div>
+              ) : (
+                <p className="rounded-xl bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-600 ring-1 ring-slate-100">
+                  {item.status === "aprobado"
+                    ? "Esta solicitud ya fue aprobada."
+                    : "Esta solicitud requiere ajustes antes de finalizar."}
+                </p>
+              )}
+            </div>
           </Card>
         </RevealOnScroll>
 
@@ -89,14 +117,9 @@ export function ReviewDetailPage() {
               <span className="text-slate-500">Codigo:</span>{" "}
               <span className="font-mono text-slate-800">{requestCode(item)}</span>
             </p>
-            <a
-              className="mt-4 inline-flex text-sm font-medium text-blue-600 transition hover:text-blue-700"
-              href={item.source}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Material adjunto
-            </a>
+            <p className="mt-4 rounded-xl bg-slate-50 px-3 py-2 text-sm font-medium text-slate-600 ring-1 ring-slate-100">
+              Solicitud disponible dentro de la plataforma.
+            </p>
           </Card>
         </RevealOnScroll>
       </div>
