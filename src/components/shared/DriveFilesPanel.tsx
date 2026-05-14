@@ -4,7 +4,7 @@ import { Archive, ChevronLeft, Download, ExternalLink, Eye, FileText, Folder, X 
 import { materiasApi } from "@/lib/api";
 import type { ApiSubjectTransferFile } from "@/types";
 
-type MegaFilesPanelProps = {
+type DriveFilesPanelProps = {
   subjectId: string;
   className?: string;
 };
@@ -14,7 +14,7 @@ type FolderNode = {
   files: ApiSubjectTransferFile[];
 };
 
-export function MegaFilesPanel({ subjectId, className = "" }: MegaFilesPanelProps) {
+export function DriveFilesPanel({ subjectId, className = "" }: DriveFilesPanelProps) {
   const [files, setFiles] = useState<ApiSubjectTransferFile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -57,7 +57,7 @@ export function MegaFilesPanel({ subjectId, className = "" }: MegaFilesPanelProp
   return (
     <div className={`rounded-xl border border-sky-200 bg-sky-50 p-4 ${className}`}>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs font-semibold uppercase tracking-wide text-sky-700">Archivos MEGA</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-sky-700">Archivos Drive</p>
         <div className="flex flex-wrap items-center gap-2">
           {files.length > 0 && Number.isInteger(numericSubjectId) && numericSubjectId > 0 && (
             <a
@@ -74,13 +74,13 @@ export function MegaFilesPanel({ subjectId, className = "" }: MegaFilesPanelProp
         </div>
       </div>
 
-      {isLoading && <MegaFilesSkeleton />}
+      {isLoading && <DriveFilesSkeleton />}
       {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
       {!isLoading && !error && files.length === 0 && (
         <div className="mt-3 rounded-lg border border-sky-100 bg-white p-4 text-center">
           <Folder className="mx-auto h-5 w-5 text-sky-600" />
-          <p className="mt-2 text-sm font-semibold text-slate-700">Todavia no hay archivos transferidos.</p>
-          <p className="mt-1 text-xs text-slate-500">Cuando la transferencia finalice, podras navegar las carpetas aqui.</p>
+          <p className="mt-2 text-sm font-semibold text-slate-700">Todavia no hay archivos copiados.</p>
+          <p className="mt-1 text-xs text-slate-500">Cuando la copia a Drive finalice, podras navegar las carpetas aqui.</p>
         </div>
       )}
 
@@ -146,7 +146,7 @@ export function MegaFilesPanel({ subjectId, className = "" }: MegaFilesPanelProp
                 </span>
                 <span className="flex shrink-0 items-center gap-2">
                   <a
-                    href={file.megaUrl}
+                    href={file.driveUrl}
                     target="_blank"
                     rel="noreferrer"
                     className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold text-sky-700 hover:bg-sky-100"
@@ -229,7 +229,7 @@ function getFolder(root: FolderNode, path: string[]) {
   return current;
 }
 
-function MegaFilesSkeleton() {
+function DriveFilesSkeleton() {
   return (
     <div className="mt-3 overflow-hidden rounded-lg bg-white ring-1 ring-sky-100">
       <div className="border-b border-sky-100 bg-sky-50/60 px-3 py-3">

@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { RevealOnScroll } from "@/components/common/RevealOnScroll";
 import { ContentTypePills } from "@/components/shared/ContentTypePills";
-import { MegaFilesPanel } from "@/components/shared/MegaFilesPanel";
+import { DriveFilesPanel } from "@/components/shared/DriveFilesPanel";
 import { PaginationControls } from "@/components/shared/PaginationControls";
 import { Button } from "@/components/ui/Button";
 import { FilterCombobox } from "@/components/ui/FilterCombobox";
@@ -223,7 +223,7 @@ export function DriveSubmissionSection() {
               <span className="min-w-0">
                 <span className="block text-sm font-extrabold">Nueva solicitud</span>
                 <span className={`mt-0.5 block text-xs leading-relaxed ${view === "new" ? "text-blue-50" : "text-slate-500"}`}>
-                  Registra material de Drive y prepara la transferencia a MEGA.
+                  Registra material de Drive y prepara la copia al Drive de revisión.
                 </span>
               </span>
             </div>
@@ -278,7 +278,7 @@ export function DriveSubmissionSection() {
                                 </div>
                                 <div className="flex items-center justify-between gap-3">
                                   <p className="text-sm font-semibold text-blue-900">
-                                    Transfiriendo archivos de Drive a MEGA
+                                    Copiando archivos al Drive de revisión
                                   </p>
                                   <span className="text-sm font-bold text-blue-900">{Math.round(transferPercent)}%</span>
                                 </div>
@@ -398,7 +398,7 @@ export function DriveSubmissionSection() {
                     </h2>
 
                     <p className="mt-1.5 max-w-md text-xs leading-relaxed text-blue-800/70">
-                                            Confirma que el resumen y el enlace son correctos. Al enviar, el sistema copiará el material a MEGA y lo dejará listo como{" "}
+                                            Confirma que el resumen y el enlace son correctos. Al enviar, el sistema copiará el material al Drive de revisión y lo dejará listo como{" "}
                                             <span className="font-semibold text-blue-900">Pendiente</span>.
                     </p>
                   </div>
@@ -409,7 +409,7 @@ export function DriveSubmissionSection() {
                     className="group relative overflow-hidden rounded-xl bg-blue-600 px-6 py-3 font-semibold text-white shadow-[0_0_20px_rgb(37,99,235,0.3)] transition-all hover:-translate-y-0.5 hover:shadow-[0_0_25px_rgb(37,99,235,0.5)]"
                   >
                     <span className="relative z-10 flex items-center gap-2">
-                      {isTransferActive ? "Preparando link MEGA..." : "Enviar solicitud"}
+                      {isTransferActive ? "Preparando Drive de revisión..." : "Enviar solicitud"}
                       <Send className="h-4 w-4 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" />
                     </span>
 
@@ -632,7 +632,7 @@ export function DriveSubmissionSection() {
                                                             <ContentTypePills items={request.contentTypes} />
                                                         </div>
 
-                                                        <MegaFilesPanel subjectId={request.id} className="lg:col-span-2" />
+                                                        <DriveFilesPanel subjectId={request.id} className="lg:col-span-2" />
                                                     </div>
 
                                                     {/* Bloque de observaciones del coordinador:
@@ -741,7 +741,7 @@ function readError(error: unknown) {
 
 function statusText(status: string) {
     if (status === "listing") return "Leyendo carpeta de Drive...";
-    if (status === "uploading") return "Subiendo archivos a MEGA...";
+    if (status === "uploading") return "Copiando archivos al Drive de revisión...";
     if (status === "completed") return "Transferencia completada";
     if (status === "failed") return "La transferencia falló";
     return "Preparando transferencia...";

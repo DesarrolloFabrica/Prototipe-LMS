@@ -17,7 +17,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
-import { MegaFilesPanel } from "@/components/shared/MegaFilesPanel";
+import { DriveFilesPanel } from "@/components/shared/DriveFilesPanel";
 import { PaginationControls } from "@/components/shared/PaginationControls";
 import { FilterCombobox } from "@/components/ui/FilterCombobox";
 import { materiasApi } from "@/lib/api";
@@ -114,9 +114,9 @@ export function UploadHistorySection() {
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.25em] text-blue-600">Trazabilidad de cargas</p>
-            <h3 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-900">Historial de cargas MEGA</h3>
+            <h3 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-900">Historial de cargas Drive</h3>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-500">
-              Consulta las transferencias realizadas desde Drive, su volumetria y el material disponible para revision.
+              Consulta las copias realizadas entre unidades compartidas de Drive, su volumetria y el material disponible para revision.
             </p>
           </div>
 
@@ -243,7 +243,7 @@ export function UploadHistorySection() {
 
                   {isExpanded && (
                     <div className="grid gap-4 border-t border-slate-100 bg-slate-50/70 p-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)]">
-                      <MegaFilesPanel subjectId={String(item.subjectId)} />
+                      <DriveFilesPanel subjectId={String(item.subjectId)} />
                       <SubjectTimelinePanel subjectId={item.subjectId} />
                     </div>
                   )}

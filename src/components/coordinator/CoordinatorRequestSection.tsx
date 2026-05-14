@@ -1,7 +1,7 @@
 ﻿import type { ApiProgram, ApiSemester, RequestStatus } from "@/types";
 import { catalogsApi } from "@/lib/api";
 import { ContentTypePills } from "@/components/shared/ContentTypePills";
-import { MegaFilesPanel } from "@/components/shared/MegaFilesPanel";
+import { DriveFilesPanel } from "@/components/shared/DriveFilesPanel";
 import { PaginationControls } from "@/components/shared/PaginationControls";
 import { UploadHistorySection } from "@/components/coordinator/UploadHistorySection";
 import { FilterCombobox } from "@/components/ui/FilterCombobox";
@@ -267,7 +267,7 @@ export function CoordinatorRequestsSection() {
               <span className="min-w-0">
                 <span className="block text-sm font-extrabold">Auditoría de cargas</span>
                 <span className={`mt-1 block text-xs leading-relaxed ${activePanel === "uploads" ? "text-slate-200" : "text-slate-500"}`}>
-                  Consulta histórica con material MEGA, descargas y trazabilidad completa.
+                  Consulta histórica con material copiado al Drive de revisión, descargas y trazabilidad completa.
                 </span>
                 <span className="mt-3 inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">
                   {completedCount} aprobadas
@@ -512,7 +512,7 @@ export function CoordinatorRequestsSection() {
                               <ContentTypePills items={request.contentTypes} />
                             </div>
 
-                            <MegaFilesPanel subjectId={request.id} className="lg:col-span-2" />
+                            <DriveFilesPanel subjectId={request.id} className="lg:col-span-2" />
 
                             {request.adjustmentNotes && (
                               <div className="rounded-xl border border-orange-200 bg-orange-50 p-4 lg:col-span-2">
@@ -619,7 +619,7 @@ export function CoordinatorRequestsSection() {
                               <p className="mb-3 text-xs text-emerald-700">
                                 {approvingId === request.id
                                   ? "Confirmando aprobación de la solicitud."
-                                  : "El material ya fue transferido a MEGA. Confirma si la revisión es satisfactoria."}
+                                  : "El material ya fue copiado al Drive de revisión. Confirma si la revisión es satisfactoria."}
                               </p>
 
                               <div className="mt-3 flex justify-end gap-2">

@@ -122,7 +122,8 @@ export interface ApiSubjectTransferFile {
   subjectId: number;
   fileName: string;
   filePath: string[];
-  megaUrl: string;
+  driveFileId?: string | null;
+  driveUrl: string;
   sizeBytes?: number | null;
   mimeType?: string | null;
   createdAt: string;
